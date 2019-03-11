@@ -1,4 +1,4 @@
-const canvas = document.getElementById("chart");
+const canvas = /** @type {HTMLCanvasElement} */ (document.getElementById("chart"));
 const ctx = canvas.getContext("2d");
 
 const grafics = {
@@ -9,3 +9,10 @@ const grafics = {
 }
 
 const colors = ['#f00', '#0f0', '#00f', '#0ff'];
+
+const maxCount = 35 + 10;
+const x0 = y0 = 30;
+const width = canvas.width - 80;
+const height = canvas.height - 90;
+const stepY = Math.round(height / maxCount);
+const stepX = Math.round(width / 10);
