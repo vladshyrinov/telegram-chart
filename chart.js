@@ -42,7 +42,7 @@ let nr_color = 0;
 for (const g in grafics) {
     ctx.beginPath();
 
-    for (var m in grafics[g]) {
+    for (const m in grafics[g]) {
         const count = grafics[g][m];
         const x = x0 + ((m - 1) * stepX);
         const y = y0 + (height - count * stepY);
@@ -52,6 +52,7 @@ for (const g in grafics) {
         else
             ctx.lineTo(x, y);
 
+
         ctx.arc(x, y, 2, 0, 2 * Math.PI, false);
         ctx.fillText(count, x - 5, y - 5); //текст над точками
         ctx.fillText(count, x0 - 15, y); //текст у боковой линии
@@ -60,6 +61,26 @@ for (const g in grafics) {
 
     ctx.strokeStyle = colors[nr_color]; //цвет линии
     nr_color++;
-    ctx.lineWidth = 1; //толщина линии		
+    ctx.lineWidth = 3; //толщина линии		
     ctx.stroke();
+}
+
+canvas.addEventListener('click', (e) => {
+    const loc = windowToCanvas(canvas, e.clientX, e.clientY);
+    console.log('clientX', e.clientX);
+    console.log('clientY', e.clientY);
+    console.log('loc', loc);
+});
+
+function windowToCanvas(canvas, x, y) {
+    const bbox = canvas.getBoundingClientRect();
+
+    console.log('box', bbox);
+    console.log('width', canvas.width);
+    console.log('height', canvas.height);
+
+    return {
+        x: x - Math.ceil(bbox.left),
+        y: y - Math.ceil(bbox.top)
+    };
 }
