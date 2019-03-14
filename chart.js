@@ -1,4 +1,4 @@
-const canvas = /** @type {HTMLCanvasElement} */ (document.getElementById("chart"));
+const canvas = /** @type {HTMLCanvasElement} */ (document.getElementById("detailed-chart"));
 const ctx = canvas.getContext("2d");
 
 //значения графиков
