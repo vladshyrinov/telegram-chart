@@ -6,7 +6,9 @@
   "repository": "https://github.com/vladshyrinov/telegram-chart.git",
   "author": "Vlad Shyrinov <vlad.shyrinov@gmail.com>",
   "license": "MIT",
-  "scripts": {},
+  "scripts": {
+    "build": "npm install --global gulp && gulp"
+  },
   "devDependencies": {
     "@babel/core": "^7.3.4",
     "@babel/register": "^7.0.0",

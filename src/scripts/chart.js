@@ -296,8 +296,8 @@ const init = async () => {
 
 init();
 
-const canvas2 = /** @type {HTMLCanvasElement} */ (document.getElementById('canvas'));
-const ctx2 = canvas2.getContext('2d');
+// const canvas2 = /** @type {HTMLCanvasElement} */ (document.getElementById('canvas'));
+// const ctx2 = canvas2.getContext('2d');
 
 
 
@@ -310,22 +310,22 @@ const ctx2 = canvas2.getContext('2d');
 //     }, i * 100);
 // }
 
-var posY = 0;
+// var posY = 0;
 
-function loop() {
-    ctx2.clearRect(0, 0, canvas2.width, canvas2.height);
-    posY +=1;
-    ctx2.beginPath();
-    ctx2.moveTo(0, posY)
-    ctx2.lineTo(100, posY);
-    ctx2.stroke();
+// function loop() {
+//     ctx2.clearRect(0, 0, canvas2.width, canvas2.height);
+//     posY +=1;
+//     ctx2.beginPath();
+//     ctx2.moveTo(0, posY)
+//     ctx2.lineTo(100, posY);
+//     ctx2.stroke();
     
-    if(posY < canvas2.width) {
-        window.requestAnimationFrame(loop);
-    }
-}
+//     if(posY < canvas2.width) {
+//         window.requestAnimationFrame(loop);
+//     }
+// }
 
-window.requestAnimationFrame(loop);
+// window.requestAnimationFrame(loop);
 
 
 // var canvas = document.getElementById("canvas");
