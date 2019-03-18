@@ -15,8 +15,48 @@ const init = async () => {
 
     const chartsData = await fetch('./data/chart_data.json').then(res => res.json());
 
-    const setCheckboxParameters = (checkbox, options) => {
-        checkbox.querySelector('.category-name').innerText = options.lineName || 'Not Set';
+    const setLabelParameters = (label, options) => {
+        document.documentElement.style.setProperty('--checkbox' + (options.idx + 1) + 'Color', options.color || '#00ff00');
+        label.querySelector('.category-name').innerText = options.lineName || 'Not Set';
+        label.querySelector('input').setAttribute('data-line-symbol', options.lineSymbol);
+    }
+
+    const labelsDataOptions = {
+        labels: Array.from(document.querySelectorAll('.checkboxes-container label'))
+    }
+
+    const initializeLabelsData = (chartData, options) => {
+        const labels = options.labels;
+        const colors = Object.values(chartData.colors);
+        const lineNames = Object.values(chartData.names);
+        const lineSymbols = Object.keys(chartData.names);
+
+        labels.forEach((label, i) => {
+            const labelOptions = {
+                lineName: lineNames[i],
+                color: colors[i],
+                idx: i,
+                lineSymbol: lineSymbols[i]
+            }
+            
+            setLabelParameters(label, labelOptions);
+        });
+    }
+
+    initializeLabelsData(chartsData[0], labelsDataOptions);
+
+    const getActiveLinesFromCheckBoxes = () => {
+        const checkboxes = Array.from(document.querySelectorAll('.checkboxes-container label input'));
+        
+        const lines = [];
+
+        checkboxes.forEach((checkbox) => {
+            if (checkbox.checked) {
+                lines.push(checkbox.dataset.lineSymbol)
+            }
+        });
+
+        return lines;
     }
 
     const drawCoordinateAxis = (options) => {
@@ -26,10 +66,10 @@ const init = async () => {
         const chartWidth = options.chartWidth || 110;
         const chartHeight = options.chartHeight || 110;
 
-        const xMax = options.xMax || 10;
-        const xMin = options.xMin || 10;
-        const yMax = options.yMax || 10;
-        const yMin = options.yMin || 10;
+        const xMax = !isNaN(options.xMax) ? options.xMax : 10;
+        const xMin = !isNaN(options.xMin) ? options.xMin : 10;
+        const yMax = !isNaN(options.yMax) ? options.yMax : 10;
+        const yMin = !isNaN(options.yMin) ? options.yMin : 10;
 
         const stepsX = options.stepsX || 5;
         const stepsY = options.stepsY || 5;
@@ -37,7 +77,7 @@ const init = async () => {
         const xValueDifference = xMax - xMin;
 
         const stepXValue = xValueDifference / stepsX;
-        const stepYValue = yMax / stepsY; 1
+        const stepYValue = yMax / stepsY;
 
         const startPosX = offsetX;
         const endPosX = chartWidth + offsetX;
@@ -93,10 +133,10 @@ const init = async () => {
         const chartHeight = options.chartHeight || 110;
         const chartWidth = options.chartWidth || 110;
         
-        const xMax = options.xMax || 10;
-        const xMin = options.xMin || 10;
-        const yMax = options.yMax || 10;
-        const yMin = options.yMin || 10;
+        const xMax = !isNaN(options.xMax) ? options.xMax : 10;
+        const xMin = !isNaN(options.xMin) ? options.xMin : 10;
+        const yMax = !isNaN(options.yMax) ? options.yMax : 10;
+        const yMin = !isNaN(options.yMin) ? options.yMin : 10;
 
         const stepY = chartHeight / (yMax - yMin);
         const stepX = chartWidth / (xMax - xMin);
@@ -141,8 +181,6 @@ const init = async () => {
     }
 
     const initializeChartDrawing = async (chartData, lines, options) => {
-        console.log(chartData);
-
         const columns = chartData.columns;
         const linesColors = chartData.colors;
         const linesNames = chartData.names;
@@ -163,6 +201,10 @@ const init = async () => {
                 yColumns.push(c);
                 allYValues = [...allYValues, ...c.slice(1)];
             }
+        }
+
+        if (!allYValues.length) {
+            allYValues = [0];
         }
 
         const xyMaxMins = {
@@ -215,41 +257,20 @@ const init = async () => {
         chartHeight: canvas.height - 100,
     }
 
-    initializeChartDrawing(chartsData[0], ['y0', 'y1'], initChartDrawingOptions);
-
-    const checkboxes = document.querySelectorAll('.checkboxes-container label');
-    const colors = Object.values(chartsData[0].colors);
-    const names = Object.values(chartsData[0].names);
-
-    [].forEach.call(checkboxes, (checkbox, i) => {
-
-        console.log('--checkbox' + (i + 1) + 'Color');
-        console.log(colors[i]);
-        document.documentElement.style.setProperty('--checkbox' + (i + 1) + 'Color', colors[i]);
-
-        const checkboxOptions = {
-            lineName: names[i]
-        }
-        
-        setCheckboxParameters(checkbox, checkboxOptions);
-    });
+    initializeChartDrawing(chartsData[0], getActiveLinesFromCheckBoxes(), initChartDrawingOptions);
 
 
-    // setTimeout(() => {
-    //     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    //     initializeChartDrawing(chartsData[0], ['y1'], initChartDrawingOptions);
-    // }, 2000);
+    const setCheckBoxesClickEvent = (labels) => {
+        labels.forEach((label) => {
+            const checkbox = label.querySelector('input');
+            checkbox.addEventListener('click', (e) => {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                initializeChartDrawing(chartsData[0], getActiveLinesFromCheckBoxes(), initChartDrawingOptions);
+            }, false);
+        });
+    }
 
-    // setTimeout(() => {
-    //     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    //     initializeChartDrawing(chartsData[0], ['y0'], initChartDrawingOptions);
-    // }, 4000);
-
-    // setTimeout(() => {
-    //     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    //     initializeChartDrawing(chartsData[0], ['y1'], initChartDrawingOptions);
-    // }, 6000);
-
+    setCheckBoxesClickEvent(labelsDataOptions.labels);
 
 
     // canvas.addEventListener('click', (e) => {
@@ -289,17 +310,17 @@ const ctx2 = canvas2.getContext('2d');
 //     }, i * 100);
 // }
 
-var posX = 0;
+var posY = 0;
 
 function loop() {
     ctx2.clearRect(0, 0, canvas2.width, canvas2.height);
-    posX +=1;
+    posY +=1;
     ctx2.beginPath();
-    ctx2.moveTo(posX, 0)
-    ctx2.lineTo(posX, 100);
+    ctx2.moveTo(0, posY)
+    ctx2.lineTo(100, posY);
     ctx2.stroke();
     
-    if(posX < canvas2.width) {
+    if(posY < canvas2.width) {
         window.requestAnimationFrame(loop);
     }
 }
