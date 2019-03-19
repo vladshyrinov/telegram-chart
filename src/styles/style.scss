@@ -89,19 +89,30 @@ html {
 
 // own style for try
 
-#block {
-  position: relative;
+#window-sizer-wrapper {
   left: 0;
-  width: 200px;
-  height: 50px;
-  background-color: #77f;
-}
-
-#block-wrapper {
-  margin-top: 50px;
   width: 500px;
-  height: 100px;
+  height: 50px;
   background: #1e1;
   margin-left: 20px;
-}
+  
+  #window-sizer {
+    cursor: pointer;
+    position: relative;
+    margin-top: 50px;
+    width: 100px;
+    height: inherit;
+    background-color: #77f;
 
+    .sizer {
+      position: absolute;
+      width: 10px;
+      height: inherit;
+      background-color: #000;
+    }
+
+    .sizer-right {
+      right: 0px;
+    }
+  }
+}
