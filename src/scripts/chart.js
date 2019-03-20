@@ -9,14 +9,16 @@ class Chart {
         this.chartNameOptions = _initChartData.chartName;
 
         this.chartDrawingOptions = _initChartData.chartDrawingOptions;
+
+        this.generalChartDrawingOptions = _initChartData.generalChartDrawingOptions;
     }
 
     get _initHTMLMarkup() {
         return `
             <div class="charts-container">
-                <canvas id="detailed-chart" width="500" height="500"></canvas>
+                <canvas id="detailed-chart" width="${this.chartDrawingOptions.chartWidth + 100}" height="${this.chartDrawingOptions.chartHeight + 100}"></canvas>
                 <div class="ruler-container">
-                    <canvas id="chart" width="500" height="50"></canvas>
+                    <canvas id="chart" width="${this.generalChartDrawingOptions.chartWidth}" height="${this.generalChartDrawingOptions.chartHeight}"></canvas>
                     <div id="window-sizer-wrapper">
                         <div id="window-sizer">
                             <div class="sizer sizer-left"></div>
@@ -44,9 +46,13 @@ class Chart {
 
         this._initSharedCtx(this.entryPoint);
 
-        this._initializeChartDrawing(this.chartDrawingOptions);
+        this._initializeChartDrawing(this.chartDrawingOptions, this.detailedCtx);
+
+        this._initializeChartDrawing(this.generalChartDrawingOptions, this.generalCtx);
 
         this._setCheckBoxesClickEvent();
+
+        this._callDragHandler();
     }
 
     _initSharedCtx(entryPoint) {        
@@ -59,7 +65,7 @@ class Chart {
         this.generalCtx = this.generalCanvas.getContext('2d');
     }
 
-    _drawCoordinateAxis(options) {
+    _drawCoordinateAxis(options, ctx) {
         const offsetX = !isNaN(options.offsetX) ? options.offsetX : 10;
         const offsetY = !isNaN(options.offsetY) ? options.offsetY : 10;
 
@@ -89,12 +95,12 @@ class Chart {
 
         // Axis parameters 
 
-        this.detailedCtx.lineWidth = options.lineWidth || 1;
-        this.detailedCtx.strokeStyle = options.axisColor || '#000000';
-        this.detailedCtx.fillStyle = options.fontColor || '#000000';
-        this.detailedCtx.font = options.font || '8px sans-serif';
+        ctx.lineWidth = options.lineWidth || 1;
+        ctx.strokeStyle = options.axisColor || '#000000';
+        ctx.fillStyle = options.fontColor || '#000000';
+        ctx.font = options.font || '8px sans-serif';
 
-        this.detailedCtx.beginPath();
+        ctx.beginPath();
 
         // X axis values
 
@@ -104,7 +110,7 @@ class Chart {
             const date = new Date(curXValue);
             const representativeDate = this._getRepresentationDate(date);
 
-            this.detailedCtx.fillText(representativeDate, curPosX, startPosY + 15);
+            ctx.fillText(representativeDate, curPosX, startPosY + 15);
         }
 
         // Y axis values
@@ -113,16 +119,16 @@ class Chart {
             curYValue += stepYValue, curPosY -= stepYAxis) {
             const amount = Math.ceil(curYValue);
 
-            this.detailedCtx.moveTo(startPosX, curPosY);
-            this.detailedCtx.lineTo(endPosX, curPosY);
-            this.detailedCtx.fillText(amount, startPosX - 2, curPosY - 6);
+            ctx.moveTo(startPosX, curPosY);
+            ctx.lineTo(endPosX, curPosY);
+            ctx.fillText(amount, startPosX - 2, curPosY - 6);
         }
 
-        this.detailedCtx.stroke();
-        this.detailedCtx.closePath();
+        ctx.stroke();
+        ctx.closePath();
     }
 
-    _drawLine(options) {
+    _drawLine(options, ctx) {
         const offsetX = !isNaN(options.offsetX) ? options.offsetX : 10;
         const offsetY = !isNaN(options.offsetY) ? options.offsetY : 10;
 
@@ -142,12 +148,12 @@ class Chart {
 
         // Chart parameters
 
-        this.detailedCtx.strokeStyle = options.lineColor || '#000000';
-        this.detailedCtx.lineWidth = options.lineWidth || 2;
+        ctx.strokeStyle = options.lineColor || '#000000';
+        ctx.lineWidth = options.lineWidth || 2;
 
         // Chart drawing
 
-        this.detailedCtx.beginPath();
+        ctx.beginPath();
 
         for (let i = 0; i < yValues.length; i++) {
 
@@ -158,26 +164,26 @@ class Chart {
             // const xValue = xValues[i];
 
             if (i === 0) {
-                this.detailedCtx.moveTo(x, y);
+                ctx.moveTo(x, y);
                 continue;
             }
 
-            this.detailedCtx.lineTo(x, y);
+            ctx.lineTo(x, y);
         }
 
-        this.detailedCtx.stroke();
-        this.detailedCtx.closePath();
+        ctx.stroke();
+        ctx.closePath();
     }
 
-    _drawChartName(options) {
+    _drawChartName(options, ctx) {
         const title = options.title || '';
 
         const offsetX = options.offsetX || 10;
         const offsetY = options.offsetY || 10;
 
-        this.detailedCtx.font = options.font || '20px sans-serif';
-        this.detailedCtx.fillStyle = options.fontColor || '#000000';
-        this.detailedCtx.fillText(title, offsetX, offsetY / 2);
+        ctx.font = options.font || '20px sans-serif';
+        ctx.fillStyle = options.fontColor || '#000000';
+        ctx.fillText(title, offsetX, offsetY / 2);
     }
 
     _initializeLabelsData(options) {
@@ -204,12 +210,12 @@ class Chart {
         label.querySelector('input').setAttribute('data-line-symbol', options.lineSymbol);
     }
 
-    _initializeChartDrawing(options) {
+    _initializeChartDrawing(options, ctx) {
         const columns = this.chartData.columns;
         const linesColors = this.chartData.colors;
         const linesNames = this.chartData.names;
         const columnsTypes = this.chartData.types;
-        const detailedChart = options.detailedChart || false;
+        const detailedChart = (options.detailedChart === false) ? false : true;
 
         const yColumns = [];
         let allYValues = [];
@@ -248,8 +254,8 @@ class Chart {
         }
 
         if (detailedChart) {
-            this._drawCoordinateAxis({...options, ...xyMaxMins, ...this.axisOptions});
-            this._drawChartName({...options, ...this.chartNameOptions});
+            this._drawCoordinateAxis({...options, ...xyMaxMins, ...this.axisOptions}, ctx);
+            this._drawChartName({...options, ...this.chartNameOptions}, ctx);
         }
 
         for (const c of yColumns) {
@@ -264,7 +270,7 @@ class Chart {
                     yValues: c.slice(1)
                 }
 
-                this._drawLine({...options, ...xyMaxMins, ...lineOptions});
+                this._drawLine({...options, ...xyMaxMins, ...lineOptions}, ctx);
             }
         }
     }
@@ -276,7 +282,9 @@ class Chart {
             const checkbox = label.querySelector('input');
             checkbox.addEventListener('click', (e) => {
                 this.detailedCtx.clearRect(0, 0, this.detailedCanvas.width, this.detailedCanvas.height);
-                this._initializeChartDrawing(this.chartDrawingOptions);
+                this._initializeChartDrawing(this.chartDrawingOptions, this.detailedCtx);
+                this.generalCtx.clearRect(0, 0, this.generalCanvas.width, this.generalCanvas.height);
+                this._initializeChartDrawing(this.generalChartDrawingOptions, this.generalCtx);
             }, false);
         });
     }
@@ -306,6 +314,101 @@ class Chart {
         return lines;
     }
 
+    _callDragHandler () {
+        const windowSizerWrapper = document.querySelector(`${this.entryPoint} #window-sizer-wrapper`);
+        const windowSizer = document.querySelector(`${this.entryPoint} #window-sizer`);
+        const sizerRight = document.querySelector(`${this.entryPoint} .sizer-right`);
+        
+        windowSizer.onmousedown = (event) => {
+            event.preventDefault();
+        
+            const target = event.target;
+        
+            const shiftXLeft = event.clientX - windowSizer.getBoundingClientRect().left;
+            const shiftXRight = windowSizer.getBoundingClientRect().right - event.clientX; 
+        
+            const onMouseMove = (event) => {
+                if (target === windowSizer) {
+                    let newLeft = event.clientX - shiftXLeft - windowSizerWrapper.getBoundingClientRect().left;
+        
+                    if (newLeft < 0) {
+                        newLeft = 0;
+                    }
+            
+                    const rightEdge = windowSizerWrapper.offsetWidth - windowSizer.offsetWidth;
+                    
+                    if (newLeft > rightEdge) {
+                        newLeft = rightEdge;
+                    }
+            
+                    windowSizer.style.left = newLeft + 'px';
+                } else if (target === sizerRight) {
+                    let newWidth = event.clientX - windowSizer.getBoundingClientRect().left + shiftXRight;
+        
+                    const minWidth = windowSizerWrapper.clientWidth / 10;
+        
+                    if (newWidth < minWidth) {
+                        newWidth = minWidth;
+                    }
+        
+                    const maxWidth = windowSizerWrapper.clientWidth - (windowSizer.getBoundingClientRect().left - windowSizerWrapper.getBoundingClientRect().left);
+        
+                    if (newWidth > maxWidth) {
+                        newWidth = maxWidth;
+                    }
+        
+                    windowSizer.style.width = newWidth + 'px';
+                } else {
+                    const oldLeft = windowSizer.getBoundingClientRect().left - windowSizerWrapper.getBoundingClientRect().left;
+                    const oldWidth = windowSizer.clientWidth;
+                    
+                    let newLeft = event.clientX - shiftXLeft - windowSizerWrapper.getBoundingClientRect().left;
+                    let newWidth = oldWidth + (oldLeft - newLeft);
+        
+                    if (newLeft < 0) {
+                        newLeft = 0;
+                    }
+        
+                    const minWidth = windowSizerWrapper.getBoundingClientRect().width / 10;
+                    const rightEdge = (windowSizer.getBoundingClientRect().right - windowSizerWrapper.getBoundingClientRect().left) - minWidth;
+        
+                    if (newLeft > rightEdge) {
+                        newLeft = rightEdge;
+                    }
+                    
+                    const rightDiff = windowSizerWrapper.getBoundingClientRect().right - windowSizer.getBoundingClientRect().right;
+                    const maxWidth = windowSizerWrapper.clientWidth - rightDiff;
+                    
+                    if (maxWidth < newWidth) {
+                        newWidth = maxWidth;
+                    }
+        
+        
+                    if (newWidth < minWidth) {
+                        newWidth = minWidth;
+                    }
+        
+                    windowSizer.style.left = newLeft + 'px';
+                    windowSizer.style.width = newWidth + 'px';
+                }
+    
+    
+                console.log(this.generalCanvas.clientWidth);
+                console.log(windowSizer.clientWidth);
+            }
+        
+            const onMouseUp = () => {
+                document.removeEventListener('mouseup', onMouseUp);
+                document.removeEventListener('mousemove', onMouseMove);
+            }
+        
+            document.addEventListener('mousemove', onMouseMove);
+            document.addEventListener('mouseup', onMouseUp);
+        };
+        
+        windowSizer.ondragstart = () => {return false;};
+    }
+
 }
 
 const init = async () => {
@@ -320,6 +423,13 @@ const init = async () => {
             chartWidth: 400,
             chartHeight: 400
         },
+        generalChartDrawingOptions: {
+            offsetX: 0,
+            offsetY: 0,
+            chartWidth: 500,
+            chartHeight: 50,
+            detailedChart: false
+        },
         chartName: {
             title: 'My Chart',
             font: 'bold 16px Verdana'
@@ -331,29 +441,11 @@ const init = async () => {
         }
     }
 
-    const chart = new Chart(initChartData);
-
-    chart.startUp();
+    new Chart(initChartData).startUp();
 }
 
 init();
 
-
-
-
-
-//     const canvas3 = /** @type {HTMLCanvasElement} */ (document.getElementById('chart'));
-//     const ctx3 = canvas3.getContext('2d');
-
-
-//     const initChartDrawingOptions3 = {
-//         offsetX: 1,
-//         offsetY: 1,
-//         chartWidth: canvas3.width,
-//         chartHeight: canvas3.height
-//     }
-
-//     initializeChartDrawing(chartsData[0], getActiveLinesFromCheckBoxes(), ctx3, initChartDrawingOptions3);
 
     // canvas.addEventListener('click', (e) => {
     //     const loc = windowToCanvas(canvas, e.clientX, e.clientY);

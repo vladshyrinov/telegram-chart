@@ -9,105 +9,108 @@ html {
   font-family: Verdana, sans-serif;
 }
 
-.charts-container {
-
-  .ruler-container {
-    position: relative;
-    height: 50px;
-    width: 400px;
-    margin-left: 40px;
+#telegram-chart {
+  .charts-container {
+    .ruler-container {
+      position: relative;
+      height: 50px;
+      width: 400px;
+      margin-left: 40px;
+    }
+  
+    #chart {
+      position: absolute;
+      height: inherit;
+      width: inherit;
+    }
+  
+    #window-sizer-wrapper {
+      position: absolute;
+      left: 0;
+      height: inherit;
+      background: rgba(#000000, 0.1);
+      width: inherit;
+  
+      #window-sizer {
+        cursor: pointer;
+        position: relative;
+        width: 100px;
+        height: inherit;
+        background-color: rgba(#fff, 0.5);
+  
+        .sizer {
+          position: absolute;
+          width: 10px;
+          height: inherit;
+          background-color: rgba(#333, 0.9);
+  
+          &-right {
+            right: 0px;
+          }
+        }
+      }
+    }
   }
-
-  #chart {
-    position: absolute;
-    height: inherit;
-    width: inherit;
-  }
-
-  #window-sizer-wrapper {
-    position: absolute;
-    left: 0;
-    height: inherit;
-    background: rgba(#000000, 0.1);
-    width: inherit;
-
-    #window-sizer {
+  
+  .checkboxes-container {
+    margin: 20px 0 20px 30px;
+  
+    .category-checkbox {
       cursor: pointer;
       position: relative;
-      width: 100px;
-      height: inherit;
-      background-color: rgba(#fff, 0.5);
-
-      .sizer {
+      padding: 5px 5px 5px 30px;
+      border: 1px solid var(--lightgray);
+      border-radius: 15px;
+      user-select: none;
+  
+      .checkmark {
         position: absolute;
-        width: 10px;
-        height: inherit;
-        background-color: rgba(#333, 0.9);
-
-        &-right {
-          right: 0px;
+        top: 5px;
+        left: 5px;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        border: 1.5px solid var(--checkbox1Color);
+        transition: all 0.5s;
+      }
+  
+      &::after {
+        content: "";
+        position: absolute;
+        width: 4px;
+        height: 8px;
+        top: 10px;
+        left: 13px;
+        border: solid var(--white);
+        border-width: 0 2px 2px 0;
+        transform: rotate(45deg);
+      }
+  
+      input[type="checkbox"] {
+        position: absolute;
+        opacity: 0;
+        cursor: pointer;
+        height: 0;
+        width: 0;
+        &:checked + .checkmark {
+          background-color: var(--checkbox1Color);
+          transition: all 0.5s;
+        }
+      }
+    }
+  
+    .category-checkbox:nth-child(2) {
+      .checkmark {
+        border-color: var(--checkbox2Color);
+      }
+  
+      input[type="checkbox"] {
+        &:checked + .checkmark {
+          background-color: var(--checkbox2Color);
         }
       }
     }
   }
 }
 
-.checkboxes-container {
-  margin-top: 20px;
 
-  .category-checkbox {
-    cursor: pointer;
-    position: relative;
-    padding: 5px 5px 5px 30px;
-    border: 1px solid var(--lightgray);
-    border-radius: 15px;
-    user-select: none;
-
-    .checkmark {
-      position: absolute;
-      top: 5px;
-      left: 5px;
-      width: 20px;
-      height: 20px;
-      border-radius: 50%;
-      border: 1.5px solid var(--checkbox1Color);
-      transition: all 0.5s;
-    }
-
-    &::after {
-      content: "";
-      position: absolute;
-      width: 4px;
-      height: 8px;
-      top: 10px;
-      left: 13px;
-      border: solid var(--white);
-      border-width: 0 2px 2px 0;
-      transform: rotate(45deg);
-    }
-
-    input[type="checkbox"] {
-      position: absolute;
-      opacity: 0;
-      cursor: pointer;
-      height: 0;
-      width: 0;
-      &:checked + .checkmark {
-        background-color: var(--checkbox1Color);
-        transition: all 0.5s;
-      }
-    }
-  }
-
-  .category-checkbox:nth-child(2) {
-    .checkmark {
-      border-color: var(--checkbox2Color);
-    }
-
-    input[type="checkbox"] {
-      &:checked + .checkmark {
-        background-color: var(--checkbox2Color);
-      }
-    }
-  }
-}

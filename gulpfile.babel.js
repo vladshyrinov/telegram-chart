@@ -22,7 +22,6 @@ const paths = {
     },
     scripts: {
         src: ['node_modules/regenerator-runtime/runtime.js', 
-        './src/scripts/drag-handler.js', 
         './src/scripts/chart.js'],
         dest: './dist/scripts'
     },
