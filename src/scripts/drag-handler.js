@@ -6,9 +6,10 @@ const sizerLeft = document.querySelector('.sizer-left');
 windowSizer.onmousedown = (event) => {
     event.preventDefault();
 
+    const target = event.target;
+
     const shiftXLeft = event.clientX - windowSizer.getBoundingClientRect().left;
     const shiftXRight = windowSizer.getBoundingClientRect().right - event.clientX; 
-    const target = event.target;
 
     const onMouseMove = (event) => {
         if (target === windowSizer) {
@@ -28,13 +29,13 @@ windowSizer.onmousedown = (event) => {
         } else if (target === sizerRight) {
             let newWidth = event.clientX - windowSizer.getBoundingClientRect().left + shiftXRight;
 
-            const widthMiminum = windowSizerWrapper.getBoundingClientRect().width / 10;
+            const minWidth = windowSizerWrapper.clientWidth / 10;
 
-            if (newWidth < widthMiminum) {
-                newWidth = widthMiminum;
+            if (newWidth < minWidth) {
+                newWidth = minWidth;
             }
 
-            const maxWidth = windowSizerWrapper.getBoundingClientRect().width - (windowSizer.getBoundingClientRect().left - windowSizerWrapper.getBoundingClientRect().left);
+            const maxWidth = windowSizerWrapper.clientWidth - (windowSizer.getBoundingClientRect().left - windowSizerWrapper.getBoundingClientRect().left);
 
             if (newWidth > maxWidth) {
                 newWidth = maxWidth;
@@ -42,22 +43,37 @@ windowSizer.onmousedown = (event) => {
 
             windowSizer.style.width = newWidth + 'px';
         } else {
-            const previousLeft = windowSizer.getBoundingClientRect().left;
-            windowSizer.style.left = event.clientX - shiftXLeft - windowSizerWrapper.getBoundingClientRect().left + 'px';
-            const currentLeft = windowSizer.getBoundingClientRect().left;
-            const leftDifference = (currentLeft - previousLeft);
-            windowSizer.style.width = windowSizer.getBoundingClientRect().width - leftDifference + 'px';
+            const oldLeft = windowSizer.getBoundingClientRect().left - windowSizerWrapper.getBoundingClientRect().left;
+            const oldWidth = windowSizer.clientWidth;
+            
+            let newLeft = event.clientX - shiftXLeft - windowSizerWrapper.getBoundingClientRect().left;
+            let newWidth = oldWidth + (oldLeft - newLeft);
 
-            const rightEdge = windowSizerWrapper.getBoundingClientRect().left;
-
-
-            const widthDiff = windowSizerWrapper.getBoundingClientRect().width - windowSizer.getBoundingClientRect().width;
-
-            if (windowSizer.getBoundingClientRect().left < rightEdge) {
-                windowSizer.style.left = 0 + 'px';
-                console.log(rightEdge);
-                windowSizer.style.width = windowSizerWrapper.getBoundingClientRect().width - widthDiff + 'px';
+            if (newLeft < 0) {
+                newLeft = 0;
             }
+
+            const minWidth = windowSizerWrapper.getBoundingClientRect().width / 10;
+            const rightEdge = (windowSizer.getBoundingClientRect().right - windowSizerWrapper.getBoundingClientRect().left) - minWidth;
+
+            if (newLeft > rightEdge) {
+                newLeft = rightEdge;
+            }
+            
+            const rightDiff = windowSizerWrapper.getBoundingClientRect().right - windowSizer.getBoundingClientRect().right;
+            const maxWidth = windowSizerWrapper.clientWidth - rightDiff;
+            
+            if (maxWidth < newWidth) {
+                newWidth = maxWidth;
+            }
+
+
+            if (newWidth < minWidth) {
+                newWidth = minWidth;
+            }
+
+            windowSizer.style.left = newLeft + 'px';
+            windowSizer.style.width = newWidth + 'px';
         }
     }
 
@@ -68,7 +84,6 @@ windowSizer.onmousedown = (event) => {
 
     document.addEventListener('mousemove', onMouseMove);
     document.addEventListener('mouseup', onMouseUp);
-
 };
 
 windowSizer.ondragstart = () => {return false;};

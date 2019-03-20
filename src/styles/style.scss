@@ -1,23 +1,5 @@
 @import "colors";
 
-.container {
-  display: flex;
-  flex-direction: column;
-}
-
-#detailed-chart,
-#chart {
-  width: 500px;
-  height: 500px;
-  border: 1px solid var(--lightgray);
-}
-
-#chart {
-  height: 100px;
-}
-
-// Change code above
-
 * {
   margin: 0;
   padding: 0;
@@ -25,6 +7,49 @@
 
 html {
   font-family: Verdana, sans-serif;
+}
+
+.charts-container {
+
+  .ruler-container {
+    position: relative;
+    height: 50px;
+    width: 400px;
+    margin-left: 40px;
+  }
+
+  #chart {
+    position: absolute;
+    height: inherit;
+    width: inherit;
+  }
+
+  #window-sizer-wrapper {
+    position: absolute;
+    left: 0;
+    height: inherit;
+    background: rgba(#000000, 0.1);
+    width: inherit;
+
+    #window-sizer {
+      cursor: pointer;
+      position: relative;
+      width: 100px;
+      height: inherit;
+      background-color: rgba(#fff, 0.5);
+
+      .sizer {
+        position: absolute;
+        width: 10px;
+        height: inherit;
+        background-color: rgba(#333, 0.9);
+
+        &-right {
+          right: 0px;
+        }
+      }
+    }
+  }
 }
 
 .checkboxes-container {
@@ -83,36 +108,6 @@ html {
       &:checked + .checkmark {
         background-color: var(--checkbox2Color);
       }
-    }
-  }
-}
-
-// own style for try
-
-#window-sizer-wrapper {
-  left: 0;
-  width: 500px;
-  height: 50px;
-  background: #1e1;
-  margin-left: 20px;
-  
-  #window-sizer {
-    cursor: pointer;
-    position: relative;
-    margin-top: 50px;
-    width: 100px;
-    height: inherit;
-    background-color: #77f;
-
-    .sizer {
-      position: absolute;
-      width: 10px;
-      height: inherit;
-      background-color: #000;
-    }
-
-    .sizer-right {
-      right: 0px;
     }
   }
 }
