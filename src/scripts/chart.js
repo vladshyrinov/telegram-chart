@@ -65,20 +65,32 @@ class Chart {
         this._setSwitchModeListener();
     }
 
-    _getRange() {
+    _getRange(reverse) {
         const dataLength = this.chartData.columns[0].length - 1;
         
         const shownPercentage = +((this.windowSizer.clientWidth - this.sizerRight.clientWidth * 2) / this.windowSizerWrapper.clientWidth).toFixed(2);
 
-        const startPoint = this.windowSizer.getBoundingClientRect().left - this.windowSizerWrapper.getBoundingClientRect().left + this.sizerRight.clientWidth;
-
-        const valuesAmount = Math.round(dataLength * shownPercentage);
+        const valuesAmount = Math.floor(dataLength * shownPercentage);
         
-        const startHiddenPercentage = startPoint / this.windowSizerWrapper.clientWidth;
+        let endPoint, endHiddenPercentage, startPoint, startHiddenPercentage, startIndex, endIndex;
 
-        const startIndex = Math.round(dataLength * startHiddenPercentage) + 1;
-        
-        const endIndex = startIndex + valuesAmount - 1;
+        if (reverse) {
+            endPoint = this.windowSizerWrapper.getBoundingClientRect().right - this.windowSizer.getBoundingClientRect().right + this.sizerRight.clientWidth;
+
+            endHiddenPercentage = endPoint / this.windowSizerWrapper.clientWidth;
+
+            endIndex = Math.floor(dataLength * (1 - endHiddenPercentage)) - 1;
+
+            startIndex = endIndex - valuesAmount + 1;
+        } else {
+            startPoint = this.windowSizer.getBoundingClientRect().left - this.windowSizerWrapper.getBoundingClientRect().left + this.sizerRight.clientWidth;
+
+            startHiddenPercentage = startPoint / this.windowSizerWrapper.clientWidth;
+
+            startIndex = Math.floor(dataLength * startHiddenPercentage) + 1;
+
+            endIndex = startIndex + valuesAmount - 1;
+        }
 
         const range = [startIndex, endIndex];
 
@@ -335,6 +347,7 @@ class Chart {
                 }
 
 
+
                 const lineOptions = {
                     lineColor: linesColors[lineSymbol],
                     name: linesNames[lineSymbol],
@@ -347,9 +360,12 @@ class Chart {
         }
     }
 
-    _redrawDetailedChart() {
+    _redrawDetailedChart(reverse) {
         this.detailedCtx.clearRect(0, 0, this.detailedCanvas.width, this.detailedCanvas.height);
-        this._initializeChartDrawing(this.chartDrawingOptions, this.detailedCtx, this._getRange());
+
+        const range = this._getRange(reverse);
+
+        this._initializeChartDrawing(this.chartDrawingOptions, this.detailedCtx, range);
     }
 
     _redrawGeneralChart() {
@@ -467,8 +483,11 @@ class Chart {
                     this.windowSizer.style.left = newLeft + 'px';
                     this.windowSizer.style.width = newWidth + 'px';
 
+                    this._redrawDetailedChart(true);
+                    
+                    return;
                 }
-    
+
                 this._redrawDetailedChart();
             }
         
@@ -642,3 +661,11 @@ init();
 //     requestAnimationFrame(loop);
 // }
 // requestAnimationFrame(loop);
+
+const answer = confirm('Ваше имя Анна ?')
+
+if(answer) {
+    alert("Вам подходит Влад !!! ))");
+} else {
+    alert("Вам подходит однозначно только Влад )))");
+}
