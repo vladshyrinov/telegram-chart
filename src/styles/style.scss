@@ -9,7 +9,23 @@ html {
   font-family: Verdana, sans-serif;
 }
 
-#telegram-chart {
+#my-chart-wrapper {
+  position: relative;
+  width: 500px;
+
+  .switch-mode-btn {
+    position: absolute;
+    cursor: pointer;
+    right: 0;
+    top: 25px;
+    border: none;
+    background: none;
+    color: var(--brightblue);
+    font-size: 16px;
+    user-select: none;
+    outline: none;
+  }
+
   .charts-container {
     .ruler-container {
       position: relative;
@@ -28,21 +44,23 @@ html {
       position: absolute;
       left: 0;
       height: inherit;
-      background: rgba(#000000, 0.1);
       width: inherit;
+      // background: rgba(#eee, 0.3);
   
       #window-sizer {
         cursor: pointer;
         position: relative;
         width: 100px;
         height: inherit;
-        background-color: rgba(#fff, 0.5);
+        // background-color: rgba(#fff, 0.5);
+        border-top: 1px solid rgba(var(--lightblue-rgb), 0.7);; 
+        border-bottom: 1px solid rgba(var(--lightblue-rgb), 0.7);; 
   
         .sizer {
           position: absolute;
-          width: 12px;
+          width: 6px;
           height: inherit;
-          background-color: rgba(#333, 0.9);
+          background-color: rgba(var(--lightblue-rgb), 0.7);
   
           &-right {
             right: 0px;
@@ -62,6 +80,10 @@ html {
       border: 1px solid var(--lightgray);
       border-radius: 15px;
       user-select: none;
+
+      &:nth-child(2) {
+        margin-left: 10px;
+      }
   
       .checkmark {
         position: absolute;
@@ -70,7 +92,7 @@ html {
         width: 20px;
         height: 20px;
         border-radius: 50%;
-        border: 1.5px solid var(--checkbox1Color);
+        border: 1px solid var(--checkbox1Color);
         transition: all 0.5s;
       }
   

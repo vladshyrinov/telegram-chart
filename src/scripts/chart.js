@@ -15,6 +15,8 @@ class Chart {
 
     get _initHTMLMarkup() {
         return `
+            <div id="my-chart-wrapper">
+            <button class="switch-mode-btn" data-mode="0">Switch to Night Mode</button>
             <div class="charts-container">
                 <div class="detailed-chart-container"> 
                     <canvas id="detailed-chart" width="${this.chartDrawingOptions.chartWidth + 100}" height="${this.chartDrawingOptions.chartHeight + 100}"></canvas>
@@ -30,17 +32,19 @@ class Chart {
                 </div>
             </div>
             <div class="checkboxes-container">
-            <label class="category-checkbox">
-                <span class="category-name"></span>
-                <input type="checkbox" name="checkbox1" checked>
-                <span class="checkmark"></span>
-            </label>
-            <label class="category-checkbox">
-                <span class="category-name"></span>
-                <input type="checkbox" name="checkbox2" checked>
-                <span class="checkmark"></span>
-            </label>
-            </div>`;
+                <label class="category-checkbox">
+                    <span class="category-name"></span>
+                    <input type="checkbox" name="checkbox1" checked>
+                    <span class="checkmark"></span>
+                </label>
+                <label class="category-checkbox">
+                    <span class="category-name"></span>
+                    <input type="checkbox" name="checkbox2" checked>
+                    <span class="checkmark"></span>
+                </label>
+            </div>
+            </div>
+            `;
     }
 
     startUp() {
@@ -48,23 +52,49 @@ class Chart {
         
         this._initSharedCtx(this.entryPoint);
 
-        this._getRange();
+        this._getColors();
 
-        this._initializeChartDrawing(this.chartDrawingOptions, this.detailedCtx, [5, 50]);
+        this._initializeChartDrawing(this.chartDrawingOptions, this.detailedCtx, this._getRange());
 
         this._initializeChartDrawing(this.generalChartDrawingOptions, this.generalCtx);
 
         this._setCheckBoxesClickEvent();
 
         this._callDragHandler();
+
+        this._setSwitchModeListener();
     }
 
     _getRange() {
-        const percentage = (this.windowSizer.clientWidth - this.sizerRight.clientWidth * 2) / this.windowSizerWrapper.clientWidth;
-
         const dataLength = this.chartData.columns[0].length - 1;
+        
+        const shownPercentage = +((this.windowSizer.clientWidth - this.sizerRight.clientWidth * 2) / this.windowSizerWrapper.clientWidth).toFixed(2);
 
-        console.log(percentage);
+        const startPoint = this.windowSizer.getBoundingClientRect().left - this.windowSizerWrapper.getBoundingClientRect().left + this.sizerRight.clientWidth;
+
+        const valuesAmount = Math.round(dataLength * shownPercentage);
+        
+        const startHiddenPercentage = startPoint / this.windowSizerWrapper.clientWidth;
+
+        const startIndex = Math.round(dataLength * startHiddenPercentage) + 1;
+        
+        const endIndex = startIndex + valuesAmount - 1;
+
+        const range = [startIndex, endIndex];
+
+        return range;
+    }
+
+    _getColors() {
+        this.colors = {
+            lightgreen: '#3cc23f',
+            lightgray: '#E6ECF0',
+            white: '#ffffff',
+            black: '#000000',
+            brightblue: '#108BE3',
+            nightblue: '#242F3E',
+            grayRgba: 'rgb(200,200,200)' 
+        }
     }
 
     _initSharedCtx(entryPoint) {        
@@ -99,7 +129,7 @@ class Chart {
         const yMax = !isNaN(options.yMax) ? options.yMax : 10;
         const yMin = !isNaN(options.yMin) ? options.yMin : 10;
 
-        const stepsX = !isNaN(options.stepsX) ? options.stepsX : 11;
+        const stepsX = !isNaN(options.stepsX) ? options.stepsX : 5;
         const stepsY = !isNaN(options.stepsY) ? options.stepsY : 5;
 
         const xValueDifference = xMax - xMin;
@@ -118,8 +148,8 @@ class Chart {
         // Axis parameters 
 
         ctx.lineWidth = options.lineWidth || 1;
-        ctx.strokeStyle = options.axisColor || '#000000';
-        ctx.fillStyle = options.fontColor || '#000000';
+        ctx.strokeStyle = options.axisColor || this.colors.black;
+        ctx.fillStyle = options.fontColor || this.colors.black;
         ctx.font = options.font || '8px sans-serif';
 
         ctx.beginPath();
@@ -150,15 +180,16 @@ class Chart {
         ctx.closePath();
     }
 
-    _drawLine(options, ctx, range) {
-        const offsetX = !isNaN(options.offsetX) ? options.offsetX : 10;
-        const offsetY = !isNaN(options.offsetY) ? options.offsetY : 10;
+    _drawLine(options, ctx) {
+        const offsetX = !isNaN(options.offsetX) ? options.offsetX : 0;
+        const offsetY = !isNaN(options.offsetY) ? options.offsetY : 0;
 
         let xValues;
         let yValues;
 
         xValues = options.xValues || [2, 6, 10];
         yValues = options.yValues || [2, 6, 10];
+
 
         const chartWidth = !isNaN(options.chartWidth) ? options.chartWidth : 110
         const chartHeight = !isNaN(options.chartHeight) ? options.chartHeight : 110
@@ -173,7 +204,7 @@ class Chart {
 
         // Chart parameters
 
-        ctx.strokeStyle = options.lineColor || '#000000';
+        ctx.strokeStyle = options.lineColor || this.colors.black;
         ctx.lineWidth = options.lineWidth || 2;
 
         // Chart drawing
@@ -207,7 +238,7 @@ class Chart {
         const offsetY = options.offsetY || 10;
 
         ctx.font = options.font || '20px sans-serif';
-        ctx.fillStyle = options.fontColor || '#000000';
+        ctx.fillStyle = options.fontColor || this.colors.black;
         ctx.fillText(title, offsetX, offsetY / 2);
     }
 
@@ -230,7 +261,7 @@ class Chart {
     }
 
     _setLabelParameters(label, options) {
-        document.documentElement.style.setProperty('--checkbox' + (options.idx + 1) + 'Color', options.color || '#00ff00');
+        document.documentElement.style.setProperty('--checkbox' + (options.idx + 1) + 'Color', options.color || this.colors.lightgreen);
         label.querySelector('.category-name').innerText = options.lineName || 'Not Set';
         label.querySelector('input').setAttribute('data-line-symbol', options.lineSymbol);
     }
@@ -259,7 +290,7 @@ class Chart {
 
             if (columnsTypes[lineSymbol] === 'x') {
                 if(range) {
-                    xValues = c.slice(range[0] + 1, range[1]);
+                    xValues = c.slice(range[0], range[1] + 1);
                 } else {
                     xValues = c.slice(1);
                 }
@@ -268,7 +299,7 @@ class Chart {
             if (columnsTypes[lineSymbol] === 'line' && lines.includes(lineSymbol)) {
                 yColumns.push(c);
                 if (range) {
-                    allYValues = [...allYValues, ...c.slice(range[0] + 1, range[1])];
+                    allYValues = [...allYValues, ...c.slice(range[0], range[1] + 1)];
                 } else {
                     allYValues = [...allYValues, ...c.slice(1)];
                 }
@@ -295,17 +326,35 @@ class Chart {
             const lineSymbol = c[0];
 
             if (lines.includes(lineSymbol)) {
+                let yValues;
                 
+                if (range) {
+                    yValues = c.slice(range[0], range[1] + 1);
+                } else {
+                    yValues = c.slice(1)
+                }
+
+
                 const lineOptions = {
                     lineColor: linesColors[lineSymbol],
                     name: linesNames[lineSymbol],
                     xValues,
-                    yValues: c.slice(1)
+                    yValues
                 }
 
                 this._drawLine({...options, ...xyMaxMins, ...lineOptions}, ctx);
             }
         }
+    }
+
+    _redrawDetailedChart() {
+        this.detailedCtx.clearRect(0, 0, this.detailedCanvas.width, this.detailedCanvas.height);
+        this._initializeChartDrawing(this.chartDrawingOptions, this.detailedCtx, this._getRange());
+    }
+
+    _redrawGeneralChart() {
+        this.generalCtx.clearRect(0, 0, this.generalCanvas.width, this.generalCanvas.height);
+        this._initializeChartDrawing(this.generalChartDrawingOptions, this.generalCtx);
     }
 
     _setCheckBoxesClickEvent() {
@@ -314,10 +363,8 @@ class Chart {
         labels.forEach((label) => {
             const checkbox = label.querySelector('input');
             checkbox.addEventListener('click', (e) => {
-                this.detailedCtx.clearRect(0, 0, this.detailedCanvas.width, this.detailedCanvas.height);
-                this._initializeChartDrawing(this.chartDrawingOptions, this.detailedCtx);
-                this.generalCtx.clearRect(0, 0, this.generalCanvas.width, this.generalCanvas.height);
-                this._initializeChartDrawing(this.generalChartDrawingOptions, this.generalCtx);
+                this._redrawDetailedChart();
+                this._redrawGeneralChart();
             }, false);
         });
     }
@@ -422,6 +469,7 @@ class Chart {
 
                 }
     
+                this._redrawDetailedChart();
             }
         
             const onMouseUp = () => {
@@ -436,16 +484,40 @@ class Chart {
         this.windowSizer.ondragstart = () => {return false;};
     }
 
-    loop() {
-        // this.detailedCanvas.width = this.detailedCanvas.clientWidth - 1 + 'px';
+    _setSwitchModeListener() {
+        const switchModebtn = document.querySelector(`${this.entryPoint} .switch-mode-btn`);
 
-        this.detailedCanvas.width = 100;
+        switchModebtn.addEventListener('click', (e) => {
+            const target = e.target;
 
-        window.requestAnimationFrame(this.loop.bind(this));
-    }
+            const categoryNames = Array.from(document.querySelectorAll(`${this.entryPoint} .category-name`));
+            
+            const categoryLabels = Array.from(document.querySelectorAll(`${this.entryPoint} .category-label`));
+            
+            const modes = ['Day Mode', 'Night Mode'];
 
-    startLoop() {
-        window.requestAnimationFrame(this.loop.bind(this));
+            const idx = +target.dataset.mode;
+
+            const newIdx = idx === 0 ? 1 : 0;
+
+            target.setAttribute('data-mode', newIdx);
+
+            target.innerText = `Switch to ${modes[idx]}`;
+
+            if (idx) {
+                document.body.style.backgroundColor = this.colors.white;
+                this.chartNameOptions.fontColor = this.colors.black;
+                categoryNames.forEach((c) => c.style.color = this.colors.black);
+                categoryLabels.forEach((c) => c.style.borderColor = this.colors.grayRgba);
+            } else {   
+                document.body.style.backgroundColor = this.colors.nightblue;
+                this.chartNameOptions.fontColor = this.colors.white;
+                categoryNames.forEach((c) => c.style.color = this.colors.white);
+                categoryLabels.forEach((c) => c.style.borderColor = this.colors.grayRgba);
+            }
+
+            this._redrawDetailedChart();
+        });
     }
 
 }
@@ -463,8 +535,6 @@ const init = async () => {
             chartHeight: 400
         },
         generalChartDrawingOptions: {
-            offsetX: 0,
-            offsetY: 0,
             chartWidth: 500,
             chartHeight: 50,
             detailedChart: false
@@ -483,8 +553,6 @@ const init = async () => {
     const chart = new Chart(initChartData);
 
     chart.startUp();
-
-    // chart.startLoop();
 }
 
 init();
