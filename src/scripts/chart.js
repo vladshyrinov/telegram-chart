@@ -661,11 +661,3 @@ init();
 //     requestAnimationFrame(loop);
 // }
 // requestAnimationFrame(loop);
-
-const answer = confirm('Ваше имя Анна ?')
-
-if(answer) {
-    alert("Вам подходит Влад !!! ))");
-} else {
-    alert("Вам подходит однозначно только Влад )))");
-}
