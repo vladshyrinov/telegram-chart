@@ -16,7 +16,9 @@ class Chart {
     get _initHTMLMarkup() {
         return `
             <div class="charts-container">
-                <canvas id="detailed-chart" width="${this.chartDrawingOptions.chartWidth + 100}" height="${this.chartDrawingOptions.chartHeight + 100}"></canvas>
+                <div class="detailed-chart-container"> 
+                    <canvas id="detailed-chart" width="${this.chartDrawingOptions.chartWidth + 100}" height="${this.chartDrawingOptions.chartHeight + 100}"></canvas>
+                </div>
                 <div class="ruler-container">
                     <canvas id="chart" width="${this.generalChartDrawingOptions.chartWidth}" height="${this.generalChartDrawingOptions.chartHeight}"></canvas>
                     <div id="window-sizer-wrapper">
@@ -42,17 +44,27 @@ class Chart {
     }
 
     startUp() {
-        document.querySelector(this.entryPoint).innerHTML = this._initHTMLMarkup;
-
+        this._setDOMElementsNodes(this.entryPoint);
+        
         this._initSharedCtx(this.entryPoint);
 
-        this._initializeChartDrawing(this.chartDrawingOptions, this.detailedCtx);
+        this._getRange();
+
+        this._initializeChartDrawing(this.chartDrawingOptions, this.detailedCtx, [5, 50]);
 
         this._initializeChartDrawing(this.generalChartDrawingOptions, this.generalCtx);
 
         this._setCheckBoxesClickEvent();
 
         this._callDragHandler();
+    }
+
+    _getRange() {
+        const percentage = (this.windowSizer.clientWidth - this.sizerRight.clientWidth * 2) / this.windowSizerWrapper.clientWidth;
+
+        const dataLength = this.chartData.columns[0].length - 1;
+
+        console.log(percentage);
     }
 
     _initSharedCtx(entryPoint) {        
@@ -63,6 +75,16 @@ class Chart {
         this.generalCanvas = /** @type {HTMLCanvasElement} */ (document.querySelector(`${entryPoint} #chart`));
 
         this.generalCtx = this.generalCanvas.getContext('2d');
+    }
+
+    _setDOMElementsNodes(entryPoint) {
+        document.querySelector(entryPoint).innerHTML = this._initHTMLMarkup;    
+        
+        this.windowSizerWrapper = document.querySelector(`${entryPoint} #window-sizer-wrapper`);
+
+        this.windowSizer = document.querySelector(`${entryPoint} #window-sizer`);
+        
+        this.sizerRight = document.querySelector(`${entryPoint} .sizer-right`);
     }
 
     _drawCoordinateAxis(options, ctx) {
@@ -77,7 +99,7 @@ class Chart {
         const yMax = !isNaN(options.yMax) ? options.yMax : 10;
         const yMin = !isNaN(options.yMin) ? options.yMin : 10;
 
-        const stepsX = !isNaN(options.stepsX) ? options.stepsX : 5;
+        const stepsX = !isNaN(options.stepsX) ? options.stepsX : 11;
         const stepsY = !isNaN(options.stepsY) ? options.stepsY : 5;
 
         const xValueDifference = xMax - xMin;
@@ -128,12 +150,15 @@ class Chart {
         ctx.closePath();
     }
 
-    _drawLine(options, ctx) {
+    _drawLine(options, ctx, range) {
         const offsetX = !isNaN(options.offsetX) ? options.offsetX : 10;
         const offsetY = !isNaN(options.offsetY) ? options.offsetY : 10;
 
-        const xValues = options.xValues || [2, 6, 10];
-        const yValues = options.yValues || [2, 6, 10];
+        let xValues;
+        let yValues;
+
+        xValues = options.xValues || [2, 6, 10];
+        yValues = options.yValues || [2, 6, 10];
 
         const chartWidth = !isNaN(options.chartWidth) ? options.chartWidth : 110
         const chartHeight = !isNaN(options.chartHeight) ? options.chartHeight : 110
@@ -210,7 +235,7 @@ class Chart {
         label.querySelector('input').setAttribute('data-line-symbol', options.lineSymbol);
     }
 
-    _initializeChartDrawing(options, ctx) {
+    _initializeChartDrawing(options, ctx, range) {
         const columns = this.chartData.columns;
         const linesColors = this.chartData.colors;
         const linesNames = this.chartData.names;
@@ -233,12 +258,20 @@ class Chart {
             const lineSymbol = c[0];
 
             if (columnsTypes[lineSymbol] === 'x') {
-                xValues = c.slice(1);
+                if(range) {
+                    xValues = c.slice(range[0] + 1, range[1]);
+                } else {
+                    xValues = c.slice(1);
+                }
             }
 
             if (columnsTypes[lineSymbol] === 'line' && lines.includes(lineSymbol)) {
                 yColumns.push(c);
-                allYValues = [...allYValues, ...c.slice(1)];
+                if (range) {
+                    allYValues = [...allYValues, ...c.slice(range[0] + 1, range[1])];
+                } else {
+                    allYValues = [...allYValues, ...c.slice(1)];
+                }
             }
         }
 
@@ -315,69 +348,65 @@ class Chart {
     }
 
     _callDragHandler () {
-        const windowSizerWrapper = document.querySelector(`${this.entryPoint} #window-sizer-wrapper`);
-        const windowSizer = document.querySelector(`${this.entryPoint} #window-sizer`);
-        const sizerRight = document.querySelector(`${this.entryPoint} .sizer-right`);
-        
-        windowSizer.onmousedown = (event) => {
+        this.windowSizer.onmousedown = (event) => {
             event.preventDefault();
         
             const target = event.target;
         
-            const shiftXLeft = event.clientX - windowSizer.getBoundingClientRect().left;
-            const shiftXRight = windowSizer.getBoundingClientRect().right - event.clientX; 
+            const shiftXLeft = event.clientX - this.windowSizer.getBoundingClientRect().left;
+            const shiftXRight = this.windowSizer.getBoundingClientRect().right - event.clientX; 
         
             const onMouseMove = (event) => {
-                if (target === windowSizer) {
-                    let newLeft = event.clientX - shiftXLeft - windowSizerWrapper.getBoundingClientRect().left;
+                if (target === this.windowSizer) {
+                    let newLeft = event.clientX - shiftXLeft - this.windowSizerWrapper.getBoundingClientRect().left;
         
                     if (newLeft < 0) {
                         newLeft = 0;
                     }
             
-                    const rightEdge = windowSizerWrapper.offsetWidth - windowSizer.offsetWidth;
+                    const rightEdge = this.windowSizerWrapper.offsetWidth - this.windowSizer.offsetWidth;
                     
                     if (newLeft > rightEdge) {
                         newLeft = rightEdge;
                     }
             
-                    windowSizer.style.left = newLeft + 'px';
-                } else if (target === sizerRight) {
-                    let newWidth = event.clientX - windowSizer.getBoundingClientRect().left + shiftXRight;
+                    this.windowSizer.style.left = newLeft + 'px';
+                } else if (target === this.sizerRight) {
+                    let newWidth = event.clientX - this.windowSizer.getBoundingClientRect().left + shiftXRight;
         
-                    const minWidth = windowSizerWrapper.clientWidth / 10;
+                    const minWidth = this.windowSizerWrapper.clientWidth / 10;
         
                     if (newWidth < minWidth) {
                         newWidth = minWidth;
                     }
         
-                    const maxWidth = windowSizerWrapper.clientWidth - (windowSizer.getBoundingClientRect().left - windowSizerWrapper.getBoundingClientRect().left);
+                    const maxWidth = this.windowSizerWrapper.clientWidth - (this.windowSizer.getBoundingClientRect().left - this.windowSizerWrapper.getBoundingClientRect().left);
         
                     if (newWidth > maxWidth) {
                         newWidth = maxWidth;
                     }
         
-                    windowSizer.style.width = newWidth + 'px';
+                    this.windowSizer.style.width = newWidth + 'px';
                 } else {
-                    const oldLeft = windowSizer.getBoundingClientRect().left - windowSizerWrapper.getBoundingClientRect().left;
-                    const oldWidth = windowSizer.clientWidth;
+                    const oldLeft = this.windowSizer.getBoundingClientRect().left - this.windowSizerWrapper.getBoundingClientRect().left;
+                    const oldWidth = this.windowSizer.clientWidth;
                     
-                    let newLeft = event.clientX - shiftXLeft - windowSizerWrapper.getBoundingClientRect().left;
+                    let newLeft = event.clientX - shiftXLeft - this.windowSizerWrapper.getBoundingClientRect().left;
                     let newWidth = oldWidth + (oldLeft - newLeft);
         
                     if (newLeft < 0) {
                         newLeft = 0;
                     }
         
-                    const minWidth = windowSizerWrapper.getBoundingClientRect().width / 10;
-                    const rightEdge = (windowSizer.getBoundingClientRect().right - windowSizerWrapper.getBoundingClientRect().left) - minWidth;
+                    const minWidth = this.windowSizerWrapper.getBoundingClientRect().width / 10;
+                    const rightEdge = (this.windowSizer.getBoundingClientRect().right - this.windowSizerWrapper.getBoundingClientRect().left) - minWidth;
         
                     if (newLeft > rightEdge) {
                         newLeft = rightEdge;
                     }
                     
-                    const rightDiff = windowSizerWrapper.getBoundingClientRect().right - windowSizer.getBoundingClientRect().right;
-                    const maxWidth = windowSizerWrapper.clientWidth - rightDiff;
+                    const rightDiff = this.windowSizerWrapper.getBoundingClientRect().right - this.windowSizer.getBoundingClientRect().right;
+                    const maxWidth = this.windowSizerWrapper.clientWidth - rightDiff;
                     
                     if (maxWidth < newWidth) {
                         newWidth = maxWidth;
@@ -388,13 +417,11 @@ class Chart {
                         newWidth = minWidth;
                     }
         
-                    windowSizer.style.left = newLeft + 'px';
-                    windowSizer.style.width = newWidth + 'px';
+                    this.windowSizer.style.left = newLeft + 'px';
+                    this.windowSizer.style.width = newWidth + 'px';
+
                 }
     
-    
-                console.log(this.generalCanvas.clientWidth);
-                console.log(windowSizer.clientWidth);
             }
         
             const onMouseUp = () => {
@@ -406,7 +433,19 @@ class Chart {
             document.addEventListener('mouseup', onMouseUp);
         };
         
-        windowSizer.ondragstart = () => {return false;};
+        this.windowSizer.ondragstart = () => {return false;};
+    }
+
+    loop() {
+        // this.detailedCanvas.width = this.detailedCanvas.clientWidth - 1 + 'px';
+
+        this.detailedCanvas.width = 100;
+
+        window.requestAnimationFrame(this.loop.bind(this));
+    }
+
+    startLoop() {
+        window.requestAnimationFrame(this.loop.bind(this));
     }
 
 }
@@ -441,7 +480,11 @@ const init = async () => {
         }
     }
 
-    new Chart(initChartData).startUp();
+    const chart = new Chart(initChartData);
+
+    chart.startUp();
+
+    // chart.startLoop();
 }
 
 init();
