@@ -604,6 +604,15 @@ class Chart {
             const y =  drawData[this.lnsSmbls[idx]].y;
             this._drawValuePoint(ctx, color, x, y);   
         }
+
+        this._drawInfoWindow(ctx, {}, drawData);
+    }
+
+    _drawInfoWindow(ctx, colors, drawData) {
+        console.log(drawData);
+        
+        ctx.beginPath();
+        ctx.moveTo()
     }
 
     _drawValuePoint(ctx, color, x, y) {
