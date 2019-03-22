@@ -11,6 +11,8 @@ class Chart {
         this.chartDrawingOptions = _initChartData.chartDrawingOptions;
 
         this.generalChartDrawingOptions = _initChartData.generalChartDrawingOptions;
+
+        this.detailedInfoOptions = _initChartData.detailedInfo;
     }
 
     get _initHTMLMarkup() {
@@ -63,6 +65,8 @@ class Chart {
         this._callDragHandler();
 
         this._setSwitchModeListener();
+
+        this._setDetailedInfoListener(this.detailedCanvas, this.chartDrawingOptions);
     }
 
     _getRange(reverse) {
@@ -70,7 +74,7 @@ class Chart {
 
         const shownPercentage = +((this.windowSizer.clientWidth - this.sizerRight.clientWidth * 2) / this.windowSizerWrapper.clientWidth).toFixed(2);
 
-        const valuesAmount = Math.floor(dataLength * shownPercentage);
+        const valuesAmount = Math.round(dataLength * shownPercentage);
 
         let endPoint, endHiddenPercentage, startPoint, startHiddenPercentage, startIndex, endIndex;
 
@@ -79,7 +83,7 @@ class Chart {
 
             endHiddenPercentage = endPoint / this.windowSizerWrapper.clientWidth;
 
-            endIndex = Math.floor(dataLength * (1 - endHiddenPercentage)) - 1;
+            endIndex = Math.round(dataLength * (1 - endHiddenPercentage)) - 1;
 
             startIndex = endIndex - valuesAmount + 1;
         } else {
@@ -87,7 +91,7 @@ class Chart {
 
             startHiddenPercentage = startPoint / this.windowSizerWrapper.clientWidth;
 
-            startIndex = Math.floor(dataLength * startHiddenPercentage) + 1;
+            startIndex = Math.round(dataLength * startHiddenPercentage) + 1;
 
             endIndex = startIndex + valuesAmount - 1;
         }
@@ -283,7 +287,7 @@ class Chart {
         label.querySelector('input').setAttribute('data-line-symbol', options.lineSymbol);
     }
 
-    _initializeChartDrawing(options, ctx, range) {
+    _initializeChartDrawing(options, ctx, range, detInfoData) {
         const columns = this.chartData.columns;
         const linesColors = this.chartData.colors;
         const linesNames = this.chartData.names;
@@ -343,8 +347,12 @@ class Chart {
             this.coordsValuesAccordance = {};
         }
 
+        this.lnsSmbls = {};
+
         for (const [idx, c] of yColumns.entries()) {
             const lineSymbol = c[0];
+
+            this.lnsSmbls[idx] = c[0];
 
             if (lines.includes(lineSymbol)) {
                 let yValues;
@@ -366,14 +374,18 @@ class Chart {
                 this._drawLine({ ...options, ...xyMaxMins, ...lineOptions }, ctx);
             }
         }
+
+        if (detInfoData) {
+            this._drawDetailedInfo(detInfoData, ctx, {...options, ...this.detailedInfoOptions});
+        }
     }
 
-    _redrawDetailedChart(reverse) {
+    _redrawDetailedChart(reverse, detInfoData) {
         this.detailedCtx.clearRect(0, 0, this.detailedCanvas.width, this.detailedCanvas.height);
 
         const range = this._getRange(reverse);
 
-        this._initializeChartDrawing(this.chartDrawingOptions, this.detailedCtx, range);
+        this._initializeChartDrawing(this.chartDrawingOptions, this.detailedCtx, range, detInfoData);
     }
 
     _redrawGeneralChart() {
@@ -548,28 +560,71 @@ class Chart {
     }
 
     _windowToCanvas(canvas, x, y) {
-        const bbox = canvas.getBoundingClientRect();
-
-        console.log('box', bbox);
-        console.log('width', canvas.width);
-        console.log('height', canvas.height);
+        const canvasBox = canvas.getBoundingClientRect();
 
         return {
-            x: x - Math.ceil(bbox.left),
-            y: y - Math.ceil(bbox.top)
+            x: x - Math.ceil(canvasBox.left),
+            y: y - Math.ceil(canvasBox.top)
         };
     }
 
 
-    _setDetailedInfoListener(canvas) {
-        canvas.addEventListener('click', (e) => {
-            const loc = this._windowToCanvas(canvas, e.clientX, e.clientY);
-            console.log('clientX', e.clientX);
-            console.log('clientY', e.clientY);
-            console.log('loc', loc);
+    _setDetailedInfoListener(canvas, options) {
+        canvas.addEventListener('mousemove', (e) => {
+            const coords = this._windowToCanvas(canvas, e.clientX, e.clientY);
 
-            console.log(this.coordsValuesAccordance);
+            const yStart = (options.offsetY || 10) + canvas.clientHeight * 0.2;
+            const yEnd = canvas.clientHeight - (100 - options.offsetY || 10);
+
+            const drawData = {yStart, yEnd};
+
+            // this._drawValuesLine(this.detailedCtx, '#ffffff', coords.x, drawData.yStart, drawData.yEnd);
+
+            if(this.coordsValuesAccordance[`${coords.x}-0`]) {
+                drawData.x = coords.x;
+                drawData[this.lnsSmbls[0]] = this.coordsValuesAccordance[`${coords.x}-0`];
+                drawData[this.lnsSmbls[1]] = this.coordsValuesAccordance[`${coords.x}-1`];
+                this._redrawDetailedChart(false, drawData);
+            }
+
+            canvas.addEventListener('mouseout', () => {
+                this._redrawDetailedChart();
+            });
         });
+    }
+
+    _drawDetailedInfo(drawData, ctx, options) {
+        let color = options.axisColor || this.colors.lightgray; 
+        
+        this._drawValuesLine(ctx, color, drawData.x, drawData.yStart, drawData.yEnd);
+
+        for(let idx = 0; idx < 2; idx++) {
+            color = this.chartData.colors[this.lnsSmbls[idx]];
+            const x =  drawData[this.lnsSmbls[idx]].x;
+            const y =  drawData[this.lnsSmbls[idx]].y;
+            this._drawValuePoint(ctx, color, x, y);   
+        }
+    }
+
+    _drawValuePoint(ctx, color, x, y) {
+        ctx.beginPath();
+        ctx.strokeStyle = color;
+        ctx.fillStyle = color;
+        ctx.moveTo(x, y);
+        ctx.arc(x, y, 4, 0, 2 * Math.PI, false);
+        ctx.fill();
+        ctx.stroke();
+        ctx.closePath();
+    }
+
+    _drawValuesLine(ctx, color, x, yStart, yEnd) {
+        ctx.beginPath();
+        ctx.moveTo(x, yStart);
+        ctx.lineTo(x, yEnd);
+        ctx.lineWidth = 1;
+        ctx.strokeStyle = color;
+        ctx.stroke();
+        ctx.closePath()
     }
 }
 
@@ -598,16 +653,15 @@ const init = async () => {
             fontColor: '#96A2AA',
             axisColor: '#DFE6EB',
             font: '10px Verdana'
+        },
+        detailedInfo: {
+            font: '8px Verdana'            
         }
     }
 
     const chart = new Chart(initChartData);
 
     chart.startUp();
-
-    const canvas = /** @type {HTMLCanvasElement} */ (document.querySelector(`#detailed-chart`));
-
-    chart._setDetailedInfoListener(canvas);
 }
 
 init();
