@@ -45,14 +45,12 @@ html {
       left: 0;
       height: inherit;
       width: inherit;
-      // background: rgba(#eee, 0.3);
   
       #window-sizer {
         cursor: pointer;
         position: relative;
         width: 100px;
         height: inherit;
-        // background-color: rgba(#fff, 0.5);
         border-top: 1px solid rgba(var(--lightblue-rgb), 0.7);; 
         border-bottom: 1px solid rgba(var(--lightblue-rgb), 0.7);; 
   
@@ -77,9 +75,15 @@ html {
       cursor: pointer;
       position: relative;
       padding: 5px 5px 5px 30px;
-      border: 1px solid var(--lightgray);
+      border: 1.5px solid var(--lightgray);
       border-radius: 15px;
       user-select: none;
+      transition: border 0.5s;
+
+      &.night {
+        border-color: var(--bluishgray);
+        transition: border 0.5s;
+      }
 
       &:nth-child(2) {
         margin-left: 10px;
@@ -87,25 +91,32 @@ html {
   
       .checkmark {
         position: absolute;
-        top: 5px;
+        top: 3px;
         left: 5px;
         width: 20px;
         height: 20px;
         border-radius: 50%;
         border: 1px solid var(--checkbox1Color);
-        transition: all 0.5s;
+        transition: background-color 0.5s;
+
+        &::after {
+          content: "";
+          position: absolute;
+          width: 0;
+          height: 0;
+          transform: rotate(90deg);
+          transition: transform 0.5s;
+        }
       }
-  
-      &::after {
-        content: "";
-        position: absolute;
-        width: 4px;
-        height: 8px;
-        top: 10px;
-        left: 13px;
-        border: solid var(--white);
-        border-width: 0 2px 2px 0;
-        transform: rotate(45deg);
+
+      .category-name {
+        color: var(--black);
+        transition: color 0.5s;
+
+        &.night {
+          color: var(--white);
+          transition: color 0.5s;
+        }
       }
   
       input[type="checkbox"] {
@@ -116,7 +127,18 @@ html {
         width: 0;
         &:checked + .checkmark {
           background-color: var(--checkbox1Color);
-          transition: all 0.5s;
+          transition: background-color 0.5s;
+
+          &::after {
+            width: 5px;
+            height: 8px;
+            top: 4px;
+            left: 7px;
+            border: solid var(--white);
+            border-width: 0 2px 2px 0;
+            transform: rotate(45deg);
+            transition: transform 0.5s;
+          }
         }
       }
     }
@@ -133,6 +155,17 @@ html {
       }
     }
   }
+}
+
+
+.night-mode {
+  background-color: var(--nightblue);
+  transition: background-color 0.5s;
+}
+
+.day-mode {
+  background-color: var(---white);
+  transition: background-color 0.5s;
 }
 
 

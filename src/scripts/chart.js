@@ -3,7 +3,7 @@ class Chart {
         this.chartData = _initChartData.chartData;
 
         this.entryPoint = _initChartData.entryPoint;
-        
+
         this.axisOptions = _initChartData.axis;
 
         this.chartNameOptions = _initChartData.chartName;
@@ -49,7 +49,7 @@ class Chart {
 
     startUp() {
         this._setDOMElementsNodes(this.entryPoint);
-        
+
         this._initSharedCtx(this.entryPoint);
 
         this._getColors();
@@ -67,11 +67,11 @@ class Chart {
 
     _getRange(reverse) {
         const dataLength = this.chartData.columns[0].length - 1;
-        
+
         const shownPercentage = +((this.windowSizer.clientWidth - this.sizerRight.clientWidth * 2) / this.windowSizerWrapper.clientWidth).toFixed(2);
 
         const valuesAmount = Math.floor(dataLength * shownPercentage);
-        
+
         let endPoint, endHiddenPercentage, startPoint, startHiddenPercentage, startIndex, endIndex;
 
         if (reverse) {
@@ -105,11 +105,11 @@ class Chart {
             black: '#000000',
             brightblue: '#108BE3',
             nightblue: '#242F3E',
-            grayRgba: 'rgb(200,200,200)' 
+            bluishgray: '#334557'
         }
     }
 
-    _initSharedCtx(entryPoint) {        
+    _initSharedCtx(entryPoint) {
         this.detailedCanvas = /** @type {HTMLCanvasElement} */ (document.querySelector(`${entryPoint} #detailed-chart`));
 
         this.detailedCtx = this.detailedCanvas.getContext('2d');
@@ -120,12 +120,12 @@ class Chart {
     }
 
     _setDOMElementsNodes(entryPoint) {
-        document.querySelector(entryPoint).innerHTML = this._initHTMLMarkup;    
-        
+        document.querySelector(entryPoint).innerHTML = this._initHTMLMarkup;
+
         this.windowSizerWrapper = document.querySelector(`${entryPoint} #window-sizer-wrapper`);
 
         this.windowSizer = document.querySelector(`${entryPoint} #window-sizer`);
-        
+
         this.sizerRight = document.querySelector(`${entryPoint} .sizer-right`);
     }
 
@@ -202,7 +202,6 @@ class Chart {
         xValues = options.xValues || [2, 6, 10];
         yValues = options.yValues || [2, 6, 10];
 
-
         const chartWidth = !isNaN(options.chartWidth) ? options.chartWidth : 110
         const chartHeight = !isNaN(options.chartHeight) ? options.chartHeight : 110
 
@@ -210,6 +209,8 @@ class Chart {
         const xMin = !isNaN(options.xMin) ? options.xMin : 10;
         const yMax = !isNaN(options.yMax) ? options.yMax : 10;
         const yMin = !isNaN(options.yMin) ? options.yMin : 10;
+
+        const idx = options.idx;
 
         const stepY = chartHeight / (yMax - yMin);
         const stepX = chartWidth / (xMax - xMin);
@@ -228,8 +229,12 @@ class Chart {
             const y = offsetY + chartHeight - Math.round(stepY * (yValues[i] - yMin));
             const x = offsetX + Math.round(stepX * (xValues[i] - xMin));
 
-            // const yValue = yValues[i];
-            // const xValue = xValues[i];
+            const yValue = yValues[i];
+            const xValue = xValues[i];
+            
+            if(ctx === this.detailedCtx) {
+                this.coordsValuesAccordance[`${x}-${idx}`] = { x, y, yValue, xValue }; 
+            }
 
             if (i === 0) {
                 ctx.moveTo(x, y);
@@ -301,7 +306,7 @@ class Chart {
             const lineSymbol = c[0];
 
             if (columnsTypes[lineSymbol] === 'x') {
-                if(range) {
+                if (range) {
                     xValues = c.slice(range[0], range[1] + 1);
                 } else {
                     xValues = c.slice(1);
@@ -330,32 +335,35 @@ class Chart {
         }
 
         if (detailedChart) {
-            this._drawCoordinateAxis({...options, ...xyMaxMins, ...this.axisOptions}, ctx);
-            this._drawChartName({...options, ...this.chartNameOptions}, ctx);
+            this._drawCoordinateAxis({ ...options, ...xyMaxMins, ...this.axisOptions }, ctx);
+            this._drawChartName({ ...options, ...this.chartNameOptions }, ctx);
         }
 
-        for (const c of yColumns) {
+        if (range) {
+            this.coordsValuesAccordance = {};
+        }
+
+        for (const [idx, c] of yColumns.entries()) {
             const lineSymbol = c[0];
 
             if (lines.includes(lineSymbol)) {
                 let yValues;
-                
+
                 if (range) {
                     yValues = c.slice(range[0], range[1] + 1);
                 } else {
                     yValues = c.slice(1)
                 }
 
-
-
                 const lineOptions = {
                     lineColor: linesColors[lineSymbol],
                     name: linesNames[lineSymbol],
                     xValues,
-                    yValues
+                    yValues,
+                    idx
                 }
 
-                this._drawLine({...options, ...xyMaxMins, ...lineOptions}, ctx);
+                this._drawLine({ ...options, ...xyMaxMins, ...lineOptions }, ctx);
             }
         }
     }
@@ -374,7 +382,7 @@ class Chart {
     }
 
     _setCheckBoxesClickEvent() {
-        const labels= Array.from(document.querySelectorAll(`${this.entryPoint} .checkboxes-container label`))
+        const labels = Array.from(document.querySelectorAll(`${this.entryPoint} .checkboxes-container label`))
 
         labels.forEach((label) => {
             const checkbox = label.querySelector('input');
@@ -410,97 +418,97 @@ class Chart {
         return lines;
     }
 
-    _callDragHandler () {
+    _callDragHandler() {
         this.windowSizer.onmousedown = (event) => {
             event.preventDefault();
-        
+
             const target = event.target;
-        
+
             const shiftXLeft = event.clientX - this.windowSizer.getBoundingClientRect().left;
-            const shiftXRight = this.windowSizer.getBoundingClientRect().right - event.clientX; 
-        
+            const shiftXRight = this.windowSizer.getBoundingClientRect().right - event.clientX;
+
             const onMouseMove = (event) => {
                 if (target === this.windowSizer) {
                     let newLeft = event.clientX - shiftXLeft - this.windowSizerWrapper.getBoundingClientRect().left;
-        
+
                     if (newLeft < 0) {
                         newLeft = 0;
                     }
-            
+
                     const rightEdge = this.windowSizerWrapper.offsetWidth - this.windowSizer.offsetWidth;
-                    
+
                     if (newLeft > rightEdge) {
                         newLeft = rightEdge;
                     }
-            
+
                     this.windowSizer.style.left = newLeft + 'px';
                 } else if (target === this.sizerRight) {
                     let newWidth = event.clientX - this.windowSizer.getBoundingClientRect().left + shiftXRight;
-        
+
                     const minWidth = this.windowSizerWrapper.clientWidth / 10;
-        
+
                     if (newWidth < minWidth) {
                         newWidth = minWidth;
                     }
-        
+
                     const maxWidth = this.windowSizerWrapper.clientWidth - (this.windowSizer.getBoundingClientRect().left - this.windowSizerWrapper.getBoundingClientRect().left);
-        
+
                     if (newWidth > maxWidth) {
                         newWidth = maxWidth;
                     }
-        
+
                     this.windowSizer.style.width = newWidth + 'px';
                 } else {
                     const oldLeft = this.windowSizer.getBoundingClientRect().left - this.windowSizerWrapper.getBoundingClientRect().left;
                     const oldWidth = this.windowSizer.clientWidth;
-                    
+
                     let newLeft = event.clientX - shiftXLeft - this.windowSizerWrapper.getBoundingClientRect().left;
                     let newWidth = oldWidth + (oldLeft - newLeft);
-        
+
                     if (newLeft < 0) {
                         newLeft = 0;
                     }
-        
+
                     const minWidth = this.windowSizerWrapper.getBoundingClientRect().width / 10;
                     const rightEdge = (this.windowSizer.getBoundingClientRect().right - this.windowSizerWrapper.getBoundingClientRect().left) - minWidth;
-        
+
                     if (newLeft > rightEdge) {
                         newLeft = rightEdge;
                     }
-                    
+
                     const rightDiff = this.windowSizerWrapper.getBoundingClientRect().right - this.windowSizer.getBoundingClientRect().right;
                     const maxWidth = this.windowSizerWrapper.clientWidth - rightDiff;
-                    
+
                     if (maxWidth < newWidth) {
                         newWidth = maxWidth;
                     }
-        
-        
+
+
                     if (newWidth < minWidth) {
                         newWidth = minWidth;
                     }
-        
+
                     this.windowSizer.style.left = newLeft + 'px';
                     this.windowSizer.style.width = newWidth + 'px';
 
                     this._redrawDetailedChart(true);
-                    
+
                     return;
                 }
 
                 this._redrawDetailedChart();
             }
-        
+
             const onMouseUp = () => {
                 document.removeEventListener('mouseup', onMouseUp);
                 document.removeEventListener('mousemove', onMouseMove);
             }
-        
+
             document.addEventListener('mousemove', onMouseMove);
             document.addEventListener('mouseup', onMouseUp);
         };
-        
-        this.windowSizer.ondragstart = () => {return false;};
+
+        this.windowSizer.ondragstart = () => { return false; };
     }
 
     _setSwitchModeListener() {
@@ -510,9 +518,9 @@ class Chart {
             const target = e.target;
 
             const categoryNames = Array.from(document.querySelectorAll(`${this.entryPoint} .category-name`));
-            
-            const categoryLabels = Array.from(document.querySelectorAll(`${this.entryPoint} .category-label`));
-            
+
+            const categoryLabels = Array.from(document.querySelectorAll(`${this.entryPoint} .category-checkbox`));
+
             const modes = ['Day Mode', 'Night Mode'];
 
             const idx = +target.dataset.mode;
@@ -524,21 +532,45 @@ class Chart {
             target.innerText = `Switch to ${modes[idx]}`;
 
             if (idx) {
-                document.body.style.backgroundColor = this.colors.white;
+                document.body.className = 'day-mode';
                 this.chartNameOptions.fontColor = this.colors.black;
-                categoryNames.forEach((c) => c.style.color = this.colors.black);
-                categoryLabels.forEach((c) => c.style.borderColor = this.colors.grayRgba);
-            } else {   
-                document.body.style.backgroundColor = this.colors.nightblue;
+                categoryNames.forEach((c) => c.classList.remove('night'));
+                categoryLabels.forEach((c) => c.classList.remove('night'));
+            } else {
+                document.body.className = 'night-mode';
                 this.chartNameOptions.fontColor = this.colors.white;
-                categoryNames.forEach((c) => c.style.color = this.colors.white);
-                categoryLabels.forEach((c) => c.style.borderColor = this.colors.grayRgba);
+                categoryNames.forEach((c) => c.classList.add('night'));
+                categoryLabels.forEach((c) => c.classList.add('night'));
             }
 
             this._redrawDetailedChart();
         });
     }
 
+    _windowToCanvas(canvas, x, y) {
+        const bbox = canvas.getBoundingClientRect();
+
+        console.log('box', bbox);
+        console.log('width', canvas.width);
+        console.log('height', canvas.height);
+
+        return {
+            x: x - Math.ceil(bbox.left),
+            y: y - Math.ceil(bbox.top)
+        };
+    }
+
+
+    _setDetailedInfoListener(canvas) {
+        canvas.addEventListener('click', (e) => {
+            const loc = this._windowToCanvas(canvas, e.clientX, e.clientY);
+            console.log('clientX', e.clientX);
+            console.log('clientY', e.clientY);
+            console.log('loc', loc);
+
+            console.log(this.coordsValuesAccordance);
+        });
+    }
 }
 
 const init = async () => {
@@ -572,31 +604,13 @@ const init = async () => {
     const chart = new Chart(initChartData);
 
     chart.startUp();
+
+    const canvas = /** @type {HTMLCanvasElement} */ (document.querySelector(`#detailed-chart`));
+
+    chart._setDetailedInfoListener(canvas);
 }
 
 init();
-
-
-    // canvas.addEventListener('click', (e) => {
-    //     const loc = windowToCanvas(canvas, e.clientX, e.clientY);
-    //     console.log('clientX', e.clientX);
-    //     console.log('clientY', e.clientY);
-    //     console.log('loc', loc);
-    // });
-
-    // function windowToCanvas(canvas, x, y) {
-    //     const bbox = canvas.getBoundingClientRect();
-
-    //     console.log('box', bbox);
-    //     console.log('width', canvas.width);
-    //     console.log('height', canvas.height);
-
-    //     return {
-    //         x: x - Math.ceil(bbox.left),
-    //         y: y - Math.ceil(bbox.top)
-    //     };
-    // }
-
 
 
 // const canvas2 = /** @type {HTMLCanvasElement} */ (document.getElementById('canvas'));
