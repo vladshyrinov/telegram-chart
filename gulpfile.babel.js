@@ -21,8 +21,7 @@ const paths = {
         dest: './dist/styles'
     },
     scripts: {
-        src: ['node_modules/regenerator-runtime/runtime.js', 
-        './src/scripts/chart.js'],
+        src: ['./src/scripts/**/*.js'],
         dest: './dist/scripts'
     },
     data: {

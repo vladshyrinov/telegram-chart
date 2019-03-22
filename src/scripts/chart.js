@@ -63,6 +63,8 @@ class Chart {
         this._callDragHandler();
 
         this._setSwitchModeListener();
+
+        this._setDetailedInfoListener(this.detailedCanvas);
     }
 
     _getRange(reverse) {
@@ -573,41 +575,37 @@ class Chart {
     }
 }
 
-const init = async () => {
-    const chartsData = await fetch('./data/chart_data.json').then(res => res.json());
-
-    const initChartData = {
-        chartData: chartsData[0],
-        entryPoint: '#telegram-chart',
-        chartDrawingOptions: {
-            offsetX: 40,
-            offsetY: 80,
-            chartWidth: 400,
-            chartHeight: 400
-        },
-        generalChartDrawingOptions: {
-            chartWidth: 500,
-            chartHeight: 50,
-            detailedChart: false
-        },
-        chartName: {
-            title: 'My Chart',
-            font: 'bold 16px Verdana'
-        },
-        axis: {
-            fontColor: '#96A2AA',
-            axisColor: '#DFE6EB',
-            font: '10px Verdana'
+const init = () => {
+    fetch('./data/chart_data.json').then(res => res.json()).then((chartsData) => {
+        const initChartData = {
+            chartData: chartsData[0],
+            entryPoint: '#telegram-chart',
+            chartDrawingOptions: {
+                offsetX: 40,
+                offsetY: 80,
+                chartWidth: 400,
+                chartHeight: 400
+            },
+            generalChartDrawingOptions: {
+                chartWidth: 500,
+                chartHeight: 50,
+                detailedChart: false
+            },
+            chartName: {
+                title: 'My Chart',
+                font: 'bold 16px Verdana'
+            },
+            axis: {
+                fontColor: '#96A2AA',
+                axisColor: '#DFE6EB',
+                font: '10px Verdana'
+            }
         }
-    }
-
-    const chart = new Chart(initChartData);
-
-    chart.startUp();
-
-    const canvas = /** @type {HTMLCanvasElement} */ (document.querySelector(`#detailed-chart`));
-
-    chart._setDetailedInfoListener(canvas);
+    
+        const chart = new Chart(initChartData);
+    
+        chart.startUp();
+    });
 }
 
 init();
