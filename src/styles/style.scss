@@ -6,6 +6,7 @@ $minTablet: 501px;
 * {
   margin: 0;
   padding: 0;
+  user-select: none;
 }
 
 html {
@@ -33,7 +34,6 @@ body {
     background: none;
     color: var(--brightblue);
     font-size: 16px;
-    user-select: none;
     outline: none;
   }
 
@@ -102,7 +102,6 @@ body {
       padding: 5px 5px 5px 30px;
       border: 1.5px solid var(--lightgray);
       border-radius: 15px;
-      user-select: none;
       transition: border 0.5s;
 
       &.night {
@@ -123,7 +122,6 @@ body {
         border-radius: 50%;
         border: 1px solid var(--checkbox1Color);
         transition: background-color 0.5s;
-        user-select: none;
 
         &::after {
           content: "";
@@ -138,7 +136,6 @@ body {
       .category-name {
         color: var(--black);
         transition: color 0.5s;
-        user-select: none;
 
         &.night {
           color: var(--white);
