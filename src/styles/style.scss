@@ -1,5 +1,8 @@
 @import "colors";
 
+$maxCellPhone: 500px;
+$minTablet: 501px;
+
 * {
   margin: 0;
   padding: 0;
@@ -38,7 +41,14 @@ body {
     .ruler-container {
       position: relative;
       height: 50px;
-      margin-left: 40px;
+      margin-left: 8px;
+      width: calc(100vw - 27px);
+
+      @media (min-width: $minTablet) {
+        margin-left: 40px;
+        width: calc(500px - 40px);
+      }
+
     }
   
     #chart {
@@ -66,7 +76,11 @@ body {
           width: 6px;
           height: inherit;
           background-color: rgba(var(--lightblue-rgb), 0.7);
-  
+          
+          @media (max-width: $minTablet) {
+            width: 10px;
+          }
+
           &-right {
             right: 0px;
           }
@@ -77,6 +91,10 @@ body {
   
   .checkboxes-container {
     margin: 20px 0 20px 30px;
+
+    @media(max-width: $maxCellPhone) {
+      margin-left: 10px;
+    }
   
     .category-checkbox {
       cursor: pointer;

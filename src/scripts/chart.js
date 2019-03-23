@@ -21,7 +21,7 @@ class Chart {
             <button class="switch-mode-btn" data-mode="0">Switch to Night Mode</button>
             <div class="charts-container">
                 <div class="detailed-chart-container"> 
-                    <canvas id="detailed-chart" width="${this.chartDrawingOptions.chartWidth + 100}" height="${this.chartDrawingOptions.chartHeight + 100}"></canvas>
+                    <canvas id="detailed-chart" width="${this.chartDrawingOptions.chartWidth}" height="${this.chartDrawingOptions.chartHeight}"></canvas>
                 </div>
                 <div class="ruler-container">
                     <canvas id="chart" width="${this.generalChartDrawingOptions.chartWidth}" height="${this.generalChartDrawingOptions.chartHeight}"></canvas>
@@ -62,7 +62,7 @@ class Chart {
 
         this._setCheckBoxesClickEvent();
 
-        this._callDragHandler();
+        this._setDragHandler();
 
         this._setSwitchModeListener();
 
@@ -83,7 +83,7 @@ class Chart {
 
             endHiddenPercentage = endPoint / this.windowSizerWrapper.clientWidth;
 
-            endIndex = Math.round(dataLength * (1 - endHiddenPercentage)) - 1;
+            endIndex = Math.ceil(dataLength * (1 - endHiddenPercentage)) - 1;
 
             startIndex = endIndex - valuesAmount + 1;
         } else {
@@ -91,7 +91,7 @@ class Chart {
 
             startHiddenPercentage = startPoint / this.windowSizerWrapper.clientWidth;
 
-            startIndex = Math.round(dataLength * startHiddenPercentage) + 1;
+            startIndex = Math.ceil(dataLength * startHiddenPercentage) + 1;
 
             endIndex = startIndex + valuesAmount - 1;
         }
@@ -153,10 +153,10 @@ class Chart {
         const stepXValue = xValueDifference / stepsX;
         const stepYValue = yMax / stepsY;
 
-        const startPosX = offsetX;
-        const endPosX = chartWidth + offsetX;
-        const startPosY = chartHeight + offsetY;
-        const endPosY = offsetY;
+        const startPosX = offsetX - 1;
+        const endPosX = chartWidth - 1;
+        const startPosY = chartHeight - 1;
+        const endPosY = offsetY - 1;
 
         const stepXAxis = (endPosX - startPosX) / stepsX;
         const stepYAxis = (startPosY - endPosY) / stepsY;
@@ -179,7 +179,7 @@ class Chart {
             const date = new Date(curXValue);
             const representativeDate = this._getRepresentationDate(date);
 
-            ctx.fillText(representativeDate, curPosX, startPosY + 15);
+            ctx.fillText(representativeDate, curPosX + 5, startPosY - 5);
         }
 
         // Y axis values
@@ -187,7 +187,7 @@ class Chart {
         for (let curPosY = startPosY, curYValue = yMin; curPosY >= endPosY;
             curYValue += stepYValue, curPosY -= stepYAxis) {
             const amount = Math.ceil(curYValue);
-
+            
             ctx.moveTo(startPosX, curPosY);
             ctx.lineTo(endPosX, curPosY);
             ctx.fillText(amount, startPosX - 2, curPosY - 6);
@@ -217,8 +217,8 @@ class Chart {
 
         const idx = options.idx;
 
-        const stepY = chartHeight / (yMax - yMin);
-        const stepX = chartWidth / (xMax - xMin);
+        const stepY = (chartHeight - offsetY - 1) / (yMax - yMin);
+        const stepX = (chartWidth - offsetX - 1) / (xMax - xMin);
 
         ctx.save();
         ctx.beginPath();
@@ -232,7 +232,7 @@ class Chart {
 
         for (let i = 0; i < yValues.length; i++) {
 
-            const y = offsetY + chartHeight - Math.round(stepY * (yValues[i] - yMin));
+            const y = chartHeight - Math.round(stepY * (yValues[i] - yMin));
             const x = offsetX + Math.round(stepX * (xValues[i] - xMin));
 
             const yValue = yValues[i];
@@ -436,95 +436,117 @@ class Chart {
         return lines;
     }
 
-    _callDragHandler() {
-        this.windowSizer.onmousedown = (event) => {
-            event.preventDefault();
+    _sizerMoveHandler(touch, event) {
+        event.preventDefault();
 
-            const target = event.target;
+        const target = event.target;
+        const clientX = !isNaN(event.clientX) ? event.clientX : event.touches[0].clientX;
 
-            const shiftXLeft = event.clientX - this.windowSizer.getBoundingClientRect().left;
-            const shiftXRight = this.windowSizer.getBoundingClientRect().right - event.clientX;
+        const shiftXLeft = clientX - this.windowSizer.getBoundingClientRect().left;
+        const shiftXRight = this.windowSizer.getBoundingClientRect().right - clientX;
 
-            const onMouseMove = (event) => {
-                if (target === this.windowSizer) {
-                    let newLeft = event.clientX - shiftXLeft - this.windowSizerWrapper.getBoundingClientRect().left;
+        const onMove = (event) => {
+            const clientX = !isNaN(event.clientX) ? event.clientX : event.touches[0].clientX;
+            if (target === this.windowSizer) {
+                let newLeft = clientX - shiftXLeft - this.windowSizerWrapper.getBoundingClientRect().left;
 
-                    if (newLeft < 0) {
-                        newLeft = 0;
-                    }
-
-                    const rightEdge = this.windowSizerWrapper.offsetWidth - this.windowSizer.offsetWidth;
-
-                    if (newLeft > rightEdge) {
-                        newLeft = rightEdge;
-                    }
-
-                    this.windowSizer.style.left = newLeft + 'px';
-                } else if (target === this.sizerRight) {
-                    let newWidth = event.clientX - this.windowSizer.getBoundingClientRect().left + shiftXRight;
-
-                    const minWidth = this.windowSizerWrapper.clientWidth / 10;
-
-                    if (newWidth < minWidth) {
-                        newWidth = minWidth;
-                    }
-
-                    const maxWidth = this.windowSizerWrapper.clientWidth - (this.windowSizer.getBoundingClientRect().left - this.windowSizerWrapper.getBoundingClientRect().left);
-
-                    if (newWidth > maxWidth) {
-                        newWidth = maxWidth;
-                    }
-
-                    this.windowSizer.style.width = newWidth + 'px';
-                } else {
-                    const oldLeft = this.windowSizer.getBoundingClientRect().left - this.windowSizerWrapper.getBoundingClientRect().left;
-                    const oldWidth = this.windowSizer.clientWidth;
-
-                    let newLeft = event.clientX - shiftXLeft - this.windowSizerWrapper.getBoundingClientRect().left;
-                    let newWidth = oldWidth + (oldLeft - newLeft);
-
-                    if (newLeft < 0) {
-                        newLeft = 0;
-                    }
-
-                    const minWidth = this.windowSizerWrapper.getBoundingClientRect().width / 10;
-                    const rightEdge = (this.windowSizer.getBoundingClientRect().right - this.windowSizerWrapper.getBoundingClientRect().left) - minWidth;
-
-                    if (newLeft > rightEdge) {
-                        newLeft = rightEdge;
-                    }
-
-                    const rightDiff = this.windowSizerWrapper.getBoundingClientRect().right - this.windowSizer.getBoundingClientRect().right;
-                    const maxWidth = this.windowSizerWrapper.clientWidth - rightDiff;
-
-                    if (maxWidth < newWidth) {
-                        newWidth = maxWidth;
-                    }
-
-
-                    if (newWidth < minWidth) {
-                        newWidth = minWidth;
-                    }
-
-                    this.windowSizer.style.left = newLeft + 'px';
-                    this.windowSizer.style.width = newWidth + 'px';
-
-                    this._redrawDetailedChart(true);
-
-                    return;
+                if (newLeft < 0) {
+                    newLeft = 0;
                 }
 
-                this._redrawDetailedChart();
+                const rightEdge = this.windowSizerWrapper.offsetWidth - this.windowSizer.offsetWidth;
+
+                if (newLeft > rightEdge) {
+                    newLeft = rightEdge;
+                }
+
+                this.windowSizer.style.left = newLeft + 'px';
+            } else if (target === this.sizerRight) {
+                let newWidth = clientX - this.windowSizer.getBoundingClientRect().left + shiftXRight;
+
+                const minWidth = this.windowSizerWrapper.clientWidth / 10;
+
+                if (newWidth < minWidth) {
+                    newWidth = minWidth;
+                }
+
+                const maxWidth = this.windowSizerWrapper.clientWidth - (this.windowSizer.getBoundingClientRect().left - this.windowSizerWrapper.getBoundingClientRect().left);
+
+                if (newWidth > maxWidth) {
+                    newWidth = maxWidth;
+                }
+
+                this.windowSizer.style.width = newWidth + 'px';
+            } else {
+                const oldLeft = this.windowSizer.getBoundingClientRect().left - this.windowSizerWrapper.getBoundingClientRect().left;
+                const oldWidth = this.windowSizer.clientWidth;
+
+                let newLeft = clientX - shiftXLeft - this.windowSizerWrapper.getBoundingClientRect().left;
+                let newWidth = oldWidth + (oldLeft - newLeft);
+
+                if (newLeft < 0) {
+                    newLeft = 0;
+                }
+
+                const minWidth = this.windowSizerWrapper.getBoundingClientRect().width / 10;
+                const rightEdge = (this.windowSizer.getBoundingClientRect().right - this.windowSizerWrapper.getBoundingClientRect().left) - minWidth;
+
+                if (newLeft > rightEdge) {
+                    newLeft = rightEdge;
+                }
+
+                const rightDiff = this.windowSizerWrapper.getBoundingClientRect().right - this.windowSizer.getBoundingClientRect().right;
+                const maxWidth = this.windowSizerWrapper.clientWidth - rightDiff;
+
+                if (maxWidth < newWidth) {
+                    newWidth = maxWidth;
+                }
+
+                if (newWidth < minWidth) {
+                    newWidth = minWidth;
+                }
+
+                newLeft = Math.ceil(newLeft);
+
+                if (touch) {
+                    newWidth = Math.floor(newWidth);
+                } else {
+                    newWidth = Math.ceil(newWidth);
+                }
+
+                this.windowSizer.style.left = newLeft + 'px';
+                this.windowSizer.style.width = newWidth + 'px';
+
+                this._redrawDetailedChart(true);
+                return;
             }
 
+            this._redrawDetailedChart();
+        }
+
+        if (touch) {
+            const onTouchEnd = () => {
+                document.removeEventListener('touchend', onTouchEnd);
+                document.removeEventListener('touchmove', onMove);
+            }
+
+            document.addEventListener('touchend', onTouchEnd);
+            document.addEventListener('touchmove', onMove);
+        } else {
             const onMouseUp = () => {
                 document.removeEventListener('mouseup', onMouseUp);
-                document.removeEventListener('mousemove', onMouseMove);
+                document.removeEventListener('mousemove', onMove);
             }
-
-            document.addEventListener('mousemove', onMouseMove);
+    
             document.addEventListener('mouseup', onMouseUp);
-        };
+            document.addEventListener('mousemove', onMove);
+        }
+    };
+
+    _setDragHandler() {
+        this.windowSizer.onmousedown = this._sizerMoveHandler.bind(this, false);
+
+        this.windowSizer.ontouchstart = this._sizerMoveHandler.bind(this, true);
 
         this.windowSizer.ondragstart = () => { return false; };
     }
@@ -576,38 +598,48 @@ class Chart {
         };
     }
 
-    _setDetailedInfoListener(canvas, options) {
-        canvas.addEventListener('mousemove', (e) => {
-            const coords = this._windowToCanvas(canvas, e.clientX, e.clientY);
+    _detailedInfoHandler(canvas, options, event) {
+        const clientX = !isNaN(event.clientX) ? event.clientX : event.touches[0].clientX;;
+        const clientY = !isNaN(event.clientY) ? event.clientY : event.touches[0].clientY;
+        const coords = this._windowToCanvas(canvas, clientX, clientY);
 
-            const yStart = (options.offsetY || 10) + canvas.clientHeight * 0.2;
-            const yEnd = canvas.clientHeight - (100 - options.offsetY || 10);
+        const yStart = (options.offsetY || 10) + canvas.clientHeight * 0.2;
+        const yEnd = canvas.clientHeight - (100 - options.offsetY || 10);
 
-            const drawData = {yStart, yEnd};
-            drawData.x = coords.x;
-            
-            const activeLines = this._getActiveLinesFromCheckBoxes();
+        const drawData = { yStart, yEnd };
+        drawData.x = coords.x;
 
-            if (this.coordsValuesAccordance[`${coords.x}-0`]) {    
-                for(const [idx, line] of activeLines.entries()) {
-                    drawData[line] = this.coordsValuesAccordance[`${coords.x}-${idx}`];
+        const activeLines = this._getActiveLinesFromCheckBoxes();
+
+        if (this.coordsValuesAccordance[`${coords.x}-0`]) {
+            for (const [idx, line] of activeLines.entries()) {
+                drawData[line] = this.coordsValuesAccordance[`${coords.x}-${idx}`];
+            }
+
+            this._redrawDetailedChart(false, drawData);
+            this.lastDetailedInfoData = drawData;
+        } else {
+            if (this.lastDetailedInfoData) {
+                for (let [idx, line] of activeLines.entries()) {
+                    drawData[line] = this.coordsValuesAccordance[`${this.lastDetailedInfoData.x}-${idx}`];
                 }
 
                 this._redrawDetailedChart(false, drawData);
-                this.lastDetailedInfoData = drawData; 
-            } else {
-                if (this.lastDetailedInfoData) {
-                    for(let [idx, line] of activeLines.entries()) {
-                        drawData[line] = this.coordsValuesAccordance[`${this.lastDetailedInfoData.x}-${idx}`];
-                    }
-
-                    this._redrawDetailedChart(false, drawData);
-                }
             }
+        }
+    }
 
-            // if(this.lastDetailedInfoData) {
-            //     window.requestAnimationFrame(this._drawSmoothDetailedInfo.bind(this, drawData));
-            // }
+    _setDetailedInfoListener(canvas, options) {
+        canvas.addEventListener('mousemove', this._detailedInfoHandler.bind(this, canvas, options));
+
+        canvas.addEventListener('touchmove', this._detailedInfoHandler.bind(this, canvas, options));
+
+        canvas.addEventListener('touchstart', this._detailedInfoHandler.bind(this, canvas, options));
+
+        canvas.addEventListener('touchend', (e) => {
+            canvas.ontouchend = null;
+            this.lastDetailedInfoData = null;
+            this._redrawDetailedChart();
         });
 
         canvas.addEventListener('mouseout', () => {
@@ -616,37 +648,6 @@ class Chart {
             this._redrawDetailedChart();
         });
     }
-
-    // _drawSmoothDetailedInfo(drawData) {
-    //     if (this.lastDetailedInfoData) {
-            
-    //         const xDiff = drawData.x - this.lastDetailedInfoData.x;
-
-    //         console.log(drawData.x, this.lastDetailedInfoData.x);
-
-    //         console.log(xDiff);
-
-    //         if(xDiff > 0) {
-    //             this.lastDetailedInfoData.x = this.lastDetailedInfoData.x + 1;
-    //             drawData.x = this.lastDetailedInfoData.x;
-    //             this._redrawDetailedChart(false, drawData);
-    //             window.requestAnimationFrame(this._drawSmoothDetailedInfo.bind(this, drawData));
-    //             console.log('move');                        
-    //         } else if(xDiff < 0) {
-    //             this.lastDetailedInfoData.x = this.lastDetailedInfoData.x - 1;
-    //             drawData.x = this.lastDetailedInfoData.x;
-    //             this._redrawDetailedChart(false, drawData);
-    //             window.requestAnimationFrame(this._drawSmoothDetailedInfo.bind(this, drawData));
-    //             console.log('move');            
-    //         } else {
-    //             console.log('move end');
-    //         }
-
-
-    //     } else {
-    //         console.log('here');
-    //     }
-    // }
 
     _drawDetailedInfo(ctx, drawData, options) {
         const xRightEdge = (options.chartWidth + options.offsetX) - drawData.x;
@@ -661,14 +662,12 @@ class Chart {
 
             const activeLines = this._getActiveLinesFromCheckBoxes();
 
-            // TO DO
-
             for(let idx = 0; idx < activeLines.length; idx++) {
                 if (drawData[activeLines[idx]]) {
                     color = this.chartData.colors[activeLines[idx]];
                     const x =  drawData[activeLines[idx]].x;
                     const y =  drawData[activeLines[idx]].y;
-                    this._drawValuePoint(ctx, {color, circleFillColor}, x, y);   
+                    this._drawValuePoint(ctx, {color, circleFillColor}, x, y, options.chartWidth - 1);   
                 }
             }
             
@@ -683,7 +682,7 @@ class Chart {
         const yStart = drawData.yStart;
 
         const xEndPoint = xStart + xWidth;
-        const xLack = xEndPoint - (options.chartWidth + options.offsetX);
+        const xLack = xEndPoint - (options.chartWidth - 1);
 
         if (xLack > 0) {
             xStart = xStart - xLack;
@@ -711,8 +710,7 @@ class Chart {
         ctx.save();
         ctx.shadowColor = this.colors.lightgray;
         ctx.fillStyle = this.colors.white;
-        ctx.shadowOffsetX = -1;
-        ctx.shadowOffsetY = 1;
+        ctx.strokeStyle = this.colors.lightgray;
         ctx.lineWidth = 1;
         ctx.beginPath();
         ctx.moveTo(x + radius.tl, y);
@@ -725,6 +723,7 @@ class Chart {
         ctx.lineTo(x, y + radius.tl);
         ctx.quadraticCurveTo(x, y, x + radius.tl, y);
         ctx.closePath();
+        ctx.stroke();
         ctx.fill();
         ctx.restore();
     }
@@ -752,10 +751,6 @@ class Chart {
                 shiftX += 50;
             }
         }
-
-        // for (const [key, name] of Object.entries(names)) {
-        // }
-
     }
 
     _drawValueInfo(ctx, xStart, yStart, shiftX, shiftY, color, value, text) {
@@ -768,12 +763,16 @@ class Chart {
         ctx.restore();
     }
 
-    _drawValuePoint(ctx, colors, x, y) {
+    _drawValuePoint(ctx, colors, x, y, xRightEdge) {
         ctx.save();
         ctx.beginPath();
         ctx.strokeStyle = colors.color;
         ctx.fillStyle = colors.circleFillColor;
-        ctx.arc(x, y, 6, 0, 2 * Math.PI);
+        if (x + 3 >= xRightEdge) {
+            ctx.arc(x - 6, y - 3, 6, 0, 2 * Math.PI);
+        } else {
+            ctx.arc(x, y, 6, 0, 2 * Math.PI);
+        }
         ctx.fill();
         ctx.stroke();
         ctx.restore();
@@ -791,77 +790,101 @@ class Chart {
     }
 }
 
-const init = (width) => {
-    fetch('./data/chart_data.json').then(res => res.json()).then((chartsData) => {
+class ChartsInitalizer {
+    constructor() {
+        this.oldWidth = 0;
+        this.width = 0;
+        this.timeOutTime = 100;
+        this.chartsData = null;
+    }
+
+    startUp() {
+        fetch('./data/chart_data.json').then(res => res.json()).then((chartsData) => {
+            this.chartsData = chartsData;
+            
+            this._setResizeEvent();
+            
+            this._resizeEvent();
+        });
+    }
+
+    _setResizeEvent() {
+        window.onresize = this._resizeEvent.bind(this, this.chartsData);
+    }
+
+    _resizeEvent() {
+        setTimeout(this._timeOutResizer.bind(this), this.timeOutTime);
+    }
+
+
+    _timeOutResizer() {
+        this.width = document.body.offsetWidth;
 
         let offsetX, offsetY;
+
         offsetY = 80;
-        
-        if (width > 500) {
-            width = 400;
+
+        if (this.width > 500) {
+            this.width = 500;
             offsetX = 40;
         } else {
-            width -= 100;
+            this.width -= 20;
             offsetX = 10;
         }
 
-        const initChartData = {
-            chartDrawingOptions: {
-                offsetX,
-                offsetY,
-                chartWidth: width,
-                chartHeight: width
-            },
-            generalChartDrawingOptions: {
-                chartWidth: width,
-                chartHeight: 50,
-                detailedChart: false
-            },
-            chartName: {
-                title: 'My Chart',
-                font: 'bold 16px Verdana'
-            },
-            axis: {
-                fontColor: '#96A2AA',
-                axisColor: '#DFE6EB',
-                font: '10px Verdana'
-            },
-            detailedInfo: {
-                circleFillColor: '#FFFFFF'
+        if (this.width !== this.oldWidth) {
+            const initChartData = {
+                chartDrawingOptions: {
+                    offsetX,
+                    offsetY,
+                    chartWidth: this.width,
+                    chartHeight: this.width
+                },
+                generalChartDrawingOptions: {
+                    chartWidth: this.width,
+                    chartHeight: 50,
+                    detailedChart: false
+                },
+                chartName: {
+                    title: 'My Chart',
+                    font: 'bold 16px Verdana'
+                },
+                axis: {
+                    fontColor: '#96A2AA',
+                    axisColor: '#DFE6EB',
+                    font: '10px Verdana'
+                },
+                detailedInfo: {
+                    circleFillColor: '#FFFFFF'
+                }
             }
-        }
-        
-        const app = document.getElementById("app");
 
-        for (const [idx, chartData] of chartsData.entries()) {
+            const app = document.getElementById("app");
 
-            if(idx === 0) {
-                const entryPointId = `telegram-chart-${idx}`;
-                const entryPoint = '#' + entryPointId;
+            for (const [idx, chartData] of this.chartsData.entries()) {
 
-                const chartNode = document.createElement('div');
-                chartNode.id = entryPointId;
-                app.appendChild(chartNode);
+                if (idx === 0) {
+                    const entryPointId = `telegram-chart-${idx}`;
+                    const entryPoint = '#' + entryPointId;
 
-                initChartData.chartData = chartData;
-                initChartData.entryPoint = entryPoint;
+                    const chartNode = document.createElement('div');
+                    chartNode.id = entryPointId;
+                    app.appendChild(chartNode);
 
-                const chart = new Chart(initChartData);
-                chart.startUp();
+                    initChartData.chartData = chartData;
+                    initChartData.entryPoint = entryPoint;
+
+                    const chart = new Chart(initChartData);
+                    chart.startUp();
+                }
             }
+
+            this.oldWidth = this.width;
         }
-    });
+    }
 }
 
-init(document.body.offsetWidth);
-
-
-window.onresize = (e) => {
-    const docWidth = document.body.offsetWidth;
-    
-    init(docWidth);
-};
-
+new ChartsInitalizer().startUp();
 
 
 
