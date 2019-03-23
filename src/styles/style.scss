@@ -123,6 +123,7 @@ body {
         border-radius: 50%;
         border: 1px solid var(--checkbox1Color);
         transition: background-color 0.5s;
+        user-select: none;
 
         &::after {
           content: "";
@@ -137,6 +138,7 @@ body {
       .category-name {
         color: var(--black);
         transition: color 0.5s;
+        user-select: none;
 
         &.night {
           color: var(--white);
