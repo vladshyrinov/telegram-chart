@@ -6,6 +6,9 @@ import concat from 'gulp-concat';
 import uglify from 'gulp-uglify';
 import htmlmin from 'gulp-htmlmin';
 import cleanCss from 'gulp-clean-css';
+import postcss from 'gulp-postcss';
+import sourcemaps from 'gulp-sourcemaps';
+import autoprefixer from 'autoprefixer';
 import del from 'del';
 import browserSync from 'browser-sync';
 
@@ -52,6 +55,9 @@ const styles = () => {
             basename: 'main',
             suffix: '.min'
         }))
+        .pipe(sourcemaps.init())
+        .pipe(postcss([autoprefixer()]))
+        .pipe(sourcemaps.write('.'))
         .pipe(gulp.dest(paths.styles.dest));
 }
 
