@@ -14,6 +14,10 @@ input, label, span, span::after {
     border-color: transparent;
 }
 
+span:focus {
+  outline: none;
+}
+
 html {
   font-family: Verdana, sans-serif;
 }
