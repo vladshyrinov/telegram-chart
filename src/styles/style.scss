@@ -9,14 +9,22 @@ html {
   font-family: Verdana, sans-serif;
 }
 
+body {
+  transition: background-color 0.5s;
+  
+  &.night {
+    background-color: var(--nightblue);
+    transition: background-color 0.5s;
+  }
+}
+
 #my-chart-wrapper {
   position: relative;
-  width: 500px;
 
   .switch-mode-btn {
     position: absolute;
     cursor: pointer;
-    right: 0;
+    right: 20px;
     top: 25px;
     border: none;
     background: none;
@@ -30,7 +38,6 @@ html {
     .ruler-container {
       position: relative;
       height: 50px;
-      width: 400px;
       margin-left: 40px;
     }
   
@@ -158,14 +165,6 @@ html {
 }
 
 
-.night-mode {
-  background-color: var(--nightblue);
-  transition: background-color 0.5s;
-}
 
-.day-mode {
-  background-color: var(---white);
-  transition: background-color 0.5s;
-}
 
 

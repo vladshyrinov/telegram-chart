@@ -161,14 +161,15 @@ class Chart {
         const stepXAxis = (endPosX - startPosX) / stepsX;
         const stepYAxis = (startPosY - endPosY) / stepsY;
 
+        ctx.save();
+        ctx.beginPath();
+
         // Axis parameters 
 
         ctx.lineWidth = options.lineWidth || 1;
         ctx.strokeStyle = options.axisColor || this.colors.black;
         ctx.fillStyle = options.fontColor || this.colors.black;
         ctx.font = options.font || '8px sans-serif';
-
-        ctx.beginPath();
 
         // X axis values
 
@@ -193,7 +194,7 @@ class Chart {
         }
 
         ctx.stroke();
-        ctx.closePath();
+        ctx.restore();
     }
 
     _drawLine(options, ctx) {
@@ -219,14 +220,15 @@ class Chart {
         const stepY = chartHeight / (yMax - yMin);
         const stepX = chartWidth / (xMax - xMin);
 
+        ctx.save();
+        ctx.beginPath();
+
         // Chart parameters
 
         ctx.strokeStyle = options.lineColor || this.colors.black;
         ctx.lineWidth = options.lineWidth || 2;
 
         // Chart drawing
-
-        ctx.beginPath();
 
         for (let i = 0; i < yValues.length; i++) {
 
@@ -249,7 +251,7 @@ class Chart {
         }
 
         ctx.stroke();
-        ctx.closePath();
+        ctx.restore();
     }
 
     _drawChartName(options, ctx) {
@@ -304,7 +306,7 @@ class Chart {
 
         this._initializeLabelsData(labelsDataOptions);
 
-        const lines = this._getActiveLinesFromCheckBoxes();
+        const activeLines = this._getActiveLinesFromCheckBoxes();
 
         for (const c of columns) {
             const lineSymbol = c[0];
@@ -317,7 +319,7 @@ class Chart {
                 }
             }
 
-            if (columnsTypes[lineSymbol] === 'line' && lines.includes(lineSymbol)) {
+            if (columnsTypes[lineSymbol] === 'line' && activeLines.includes(lineSymbol)) {
                 yColumns.push(c);
                 if (range) {
                     allYValues = [...allYValues, ...c.slice(range[0], range[1] + 1)];
@@ -347,14 +349,10 @@ class Chart {
             this.coordsValuesAccordance = {};
         }
 
-        this.lnsSmbls = {};
-
         for (const [idx, c] of yColumns.entries()) {
             const lineSymbol = c[0];
 
-            this.lnsSmbls[idx] = c[0];
-
-            if (lines.includes(lineSymbol)) {
+            if (activeLines.includes(lineSymbol)) {
                 let yValues;
 
                 if (range) {
@@ -376,7 +374,7 @@ class Chart {
         }
 
         if (detInfoData) {
-            this._drawDetailedInfo(detInfoData, ctx, {...options, ...this.detailedInfoOptions});
+            this._drawDetailedInfo(ctx, detInfoData, {...options, ...this.detailedInfoOptions});
         }
     }
 
@@ -405,15 +403,23 @@ class Chart {
         });
     }
 
-    _getRepresentationDate(ms) {
+    _getRepresentationDate(ms, weekDay) {
         const monthsShortNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-
+        const weekDaysShortNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thr', 'Fri', 'Sat'];
+        
         const date = new Date(ms);
 
         const day = date.getDate();
         const month = monthsShortNames[date.getMonth()];
+        
+        const monthAndDay = month + ' ' + day;
+        
+        if (weekDay) {
+            weekDay = weekDaysShortNames[date.getDay()];
+            return weekDay + ', ' + monthAndDay; 
+        }
 
-        return month + ' ' + day;
+        return monthAndDay;
     }
 
     _getActiveLinesFromCheckBoxes() {
@@ -544,13 +550,15 @@ class Chart {
             target.innerText = `Switch to ${modes[idx]}`;
 
             if (idx) {
-                document.body.className = 'day-mode';
                 this.chartNameOptions.fontColor = this.colors.black;
+                this.detailedInfoOptions.circleFillColor = this.colors.white;     
+                document.body.classList.remove('night');
                 categoryNames.forEach((c) => c.classList.remove('night'));
                 categoryLabels.forEach((c) => c.classList.remove('night'));
             } else {
-                document.body.className = 'night-mode';
                 this.chartNameOptions.fontColor = this.colors.white;
+                this.detailedInfoOptions.circleFillColor = this.colors.nightblue;     
+                document.body.classList.add('night');
                 categoryNames.forEach((c) => c.classList.add('night'));
                 categoryLabels.forEach((c) => c.classList.add('night'));
             }
@@ -568,7 +576,6 @@ class Chart {
         };
     }
 
-
     _setDetailedInfoListener(canvas, options) {
         canvas.addEventListener('mousemove', (e) => {
             const coords = this._windowToCanvas(canvas, e.clientX, e.clientY);
@@ -577,79 +584,236 @@ class Chart {
             const yEnd = canvas.clientHeight - (100 - options.offsetY || 10);
 
             const drawData = {yStart, yEnd};
+            drawData.x = coords.x;
+            
+            const activeLines = this._getActiveLinesFromCheckBoxes();
 
-            // this._drawValuesLine(this.detailedCtx, '#ffffff', coords.x, drawData.yStart, drawData.yEnd);
+            if (this.coordsValuesAccordance[`${coords.x}-0`]) {    
+                for(const [idx, line] of activeLines.entries()) {
+                    drawData[line] = this.coordsValuesAccordance[`${coords.x}-${idx}`];
+                }
 
-            if(this.coordsValuesAccordance[`${coords.x}-0`]) {
-                drawData.x = coords.x;
-                drawData[this.lnsSmbls[0]] = this.coordsValuesAccordance[`${coords.x}-0`];
-                drawData[this.lnsSmbls[1]] = this.coordsValuesAccordance[`${coords.x}-1`];
                 this._redrawDetailedChart(false, drawData);
+                this.lastDetailedInfoData = drawData; 
+            } else {
+                if (this.lastDetailedInfoData) {
+                    for(let [idx, line] of activeLines.entries()) {
+                        drawData[line] = this.coordsValuesAccordance[`${this.lastDetailedInfoData.x}-${idx}`];
+                    }
+
+                    this._redrawDetailedChart(false, drawData);
+                }
             }
 
-            canvas.addEventListener('mouseout', () => {
-                this._redrawDetailedChart();
-            });
+            // if(this.lastDetailedInfoData) {
+            //     window.requestAnimationFrame(this._drawSmoothDetailedInfo.bind(this, drawData));
+            // }
+        });
+
+        canvas.addEventListener('mouseout', () => {
+            canvas.onmouseout = null;
+            this.lastDetailedInfoData = null;
+            this._redrawDetailedChart();
         });
     }
 
-    _drawDetailedInfo(drawData, ctx, options) {
-        let color = options.axisColor || this.colors.lightgray; 
-        
-        this._drawValuesLine(ctx, color, drawData.x, drawData.yStart, drawData.yEnd);
+    // _drawSmoothDetailedInfo(drawData) {
+    //     if (this.lastDetailedInfoData) {
+            
+    //         const xDiff = drawData.x - this.lastDetailedInfoData.x;
 
-        for(let idx = 0; idx < 2; idx++) {
-            color = this.chartData.colors[this.lnsSmbls[idx]];
-            const x =  drawData[this.lnsSmbls[idx]].x;
-            const y =  drawData[this.lnsSmbls[idx]].y;
-            this._drawValuePoint(ctx, color, x, y);   
+    //         console.log(drawData.x, this.lastDetailedInfoData.x);
+
+    //         console.log(xDiff);
+
+    //         if(xDiff > 0) {
+    //             this.lastDetailedInfoData.x = this.lastDetailedInfoData.x + 1;
+    //             drawData.x = this.lastDetailedInfoData.x;
+    //             this._redrawDetailedChart(false, drawData);
+    //             window.requestAnimationFrame(this._drawSmoothDetailedInfo.bind(this, drawData));
+    //             console.log('move');                        
+    //         } else if(xDiff < 0) {
+    //             this.lastDetailedInfoData.x = this.lastDetailedInfoData.x - 1;
+    //             drawData.x = this.lastDetailedInfoData.x;
+    //             this._redrawDetailedChart(false, drawData);
+    //             window.requestAnimationFrame(this._drawSmoothDetailedInfo.bind(this, drawData));
+    //             console.log('move');            
+    //         } else {
+    //             console.log('move end');
+    //         }
+
+
+    //     } else {
+    //         console.log('here');
+    //     }
+    // }
+
+    _drawDetailedInfo(ctx, drawData, options) {
+        const xRightEdge = (options.chartWidth + options.offsetX) - drawData.x;
+        const xLeftEdge = drawData.x - options.offsetX;
+
+        if (xRightEdge >= 0 && xLeftEdge >= 0) {
+        
+            let color = options.axisColor || this.colors.lightgray; 
+            let circleFillColor = options.circleFillColor || this.colors.white;
+
+            this._drawValuesLine(ctx, { ...drawData, color});
+
+            const activeLines = this._getActiveLinesFromCheckBoxes();
+
+            // TO DO
+
+            for(let idx = 0; idx < activeLines.length; idx++) {
+                if (drawData[activeLines[idx]]) {
+                    color = this.chartData.colors[activeLines[idx]];
+                    const x =  drawData[activeLines[idx]].x;
+                    const y =  drawData[activeLines[idx]].y;
+                    this._drawValuePoint(ctx, {color, circleFillColor}, x, y);   
+                }
+            }
+            
+            this._drawInfoWindow(ctx, drawData, options);
+        }
+    }
+
+    _drawInfoWindow(ctx, drawData, options) {
+        let xWidth = 100;
+        let yHeight = 65;
+        let xStart = drawData.x - 10;
+        const yStart = drawData.yStart;
+
+        const xEndPoint = xStart + xWidth;
+        const xLack = xEndPoint - (options.chartWidth + options.offsetX);
+
+        if (xLack > 0) {
+            xStart = xStart - xLack;
+        }
+        
+        this._roundRect(ctx, xStart, yStart, xWidth, yHeight, 5, this.colors.white);
+        this._drawInfoText(ctx, {...drawData, xStart}, options);
+    }
+
+    _roundRect(ctx, x, y, width, height, radius) {
+    
+        if (typeof radius === 'undefined') {
+            radius = 5;
         }
 
-        this._drawInfoWindow(ctx, {}, drawData);
+        if (typeof radius === 'number') {
+            radius = { tl: radius, tr: radius, br: radius, bl: radius };
+        } else {
+            var defaultRadius = { tl: 0, tr: 0, br: 0, bl: 0 };
+            for (var side in defaultRadius) {
+                radius[side] = radius[side] || defaultRadius[side];
+            }
+        }
+
+        ctx.save();
+        ctx.shadowColor = this.colors.lightgray;
+        ctx.fillStyle = this.colors.white;
+        ctx.shadowOffsetX = -1;
+        ctx.shadowOffsetY = 1;
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(x + radius.tl, y);
+        ctx.lineTo(x + width - radius.tr, y);
+        ctx.quadraticCurveTo(x + width, y, x + width, y + radius.tr);
+        ctx.lineTo(x + width, y + height - radius.br);
+        ctx.quadraticCurveTo(x + width, y + height, x + width - radius.br, y + height);
+        ctx.lineTo(x + radius.bl, y + height);
+        ctx.quadraticCurveTo(x, y + height, x, y + height - radius.bl);
+        ctx.lineTo(x, y + radius.tl);
+        ctx.quadraticCurveTo(x, y, x + radius.tl, y);
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
     }
 
-    _drawInfoWindow(ctx, colors, drawData) {
-        console.log(drawData);
+    _drawInfoText(ctx, drawData) {
+        const activeLines = this._getActiveLinesFromCheckBoxes();
         
-        ctx.beginPath();
-        ctx.moveTo()
+        if (activeLines.length && drawData[activeLines[0]]) {
+            const date = this._getRepresentationDate(drawData[activeLines[0]].xValue, true);
+            const shiftY = 20;
+            let shiftX = 0;
+            const xStart = drawData.xStart;
+            const yStart = drawData.yStart;
+    
+            ctx.save();
+            ctx.font = 'bold 12px Verdana';
+            ctx.fillText(date, xStart + 10, yStart + shiftY);
+            ctx.restore();
+    
+            const colors = this.chartData.colors;
+            const names = this.chartData.names;
+    
+            for (const line of activeLines) {
+                this._drawValueInfo(ctx, xStart, yStart, shiftX, shiftY, colors[line], drawData[line].yValue, names[line]);
+                shiftX += 50;
+            }
+        }
+
+        // for (const [key, name] of Object.entries(names)) {
+        // }
+
     }
 
-    _drawValuePoint(ctx, color, x, y) {
-        ctx.beginPath();
-        ctx.strokeStyle = color;
+    _drawValueInfo(ctx, xStart, yStart, shiftX, shiftY, color, value, text) {
+        ctx.save();
+        ctx.font = 'bold 14px Verdana';
         ctx.fillStyle = color;
-        ctx.moveTo(x, y);
-        ctx.arc(x, y, 4, 0, 2 * Math.PI, false);
+        ctx.fillText(value, xStart + 10 + shiftX, yStart + shiftY + 25);
+        ctx.font = 'bold 9px Verdana';
+        ctx.fillText(text, xStart + 10 + shiftX, yStart + shiftY + 38);
+        ctx.restore();
+    }
+
+    _drawValuePoint(ctx, colors, x, y) {
+        ctx.save();
+        ctx.beginPath();
+        ctx.strokeStyle = colors.color;
+        ctx.fillStyle = colors.circleFillColor;
+        ctx.arc(x, y, 6, 0, 2 * Math.PI);
         ctx.fill();
         ctx.stroke();
-        ctx.closePath();
+        ctx.restore();
     }
 
-    _drawValuesLine(ctx, color, x, yStart, yEnd) {
+    _drawValuesLine(ctx, drawData) { 
+        ctx.save();       
         ctx.beginPath();
-        ctx.moveTo(x, yStart);
-        ctx.lineTo(x, yEnd);
-        ctx.lineWidth = 1;
-        ctx.strokeStyle = color;
+        ctx.moveTo(drawData.x, drawData.yStart);
+        ctx.lineTo(drawData.x, drawData.yEnd);
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = drawData.color;
         ctx.stroke();
-        ctx.closePath()
+        ctx.restore();
     }
 }
 
-const init = () => {
+const init = (width) => {
     fetch('./data/chart_data.json').then(res => res.json()).then((chartsData) => {
+
+        let offsetX, offsetY;
+        offsetY = 80;
+        
+        if (width > 500) {
+            width = 400;
+            offsetX = 40;
+        } else {
+            width -= 100;
+            offsetX = 10;
+        }
+
         const initChartData = {
-            chartData: chartsData[0],
-            entryPoint: '#telegram-chart',
             chartDrawingOptions: {
-                offsetX: 40,
-                offsetY: 80,
-                chartWidth: 400,
-                chartHeight: 400
+                offsetX,
+                offsetY,
+                chartWidth: width,
+                chartHeight: width
             },
             generalChartDrawingOptions: {
-                chartWidth: 500,
+                chartWidth: width,
                 chartHeight: 50,
                 detailedChart: false
             },
@@ -661,16 +825,44 @@ const init = () => {
                 fontColor: '#96A2AA',
                 axisColor: '#DFE6EB',
                 font: '10px Verdana'
+            },
+            detailedInfo: {
+                circleFillColor: '#FFFFFF'
             }
         }
-    
-        const chart = new Chart(initChartData);
-    
-        chart.startUp();
+        
+        const app = document.getElementById("app");
+
+        for (const [idx, chartData] of chartsData.entries()) {
+
+            if(idx === 0) {
+                const entryPointId = `telegram-chart-${idx}`;
+                const entryPoint = '#' + entryPointId;
+
+                const chartNode = document.createElement('div');
+                chartNode.id = entryPointId;
+                app.appendChild(chartNode);
+
+                initChartData.chartData = chartData;
+                initChartData.entryPoint = entryPoint;
+
+                const chart = new Chart(initChartData);
+                chart.startUp();
+            }
+        }
     });
 }
 
-init();
+init(document.body.offsetWidth);
+
+
+window.onresize = (e) => {
+    const docWidth = document.body.offsetWidth;
+    
+    init(docWidth);
+};
+
+
 
 
 // const canvas2 = /** @type {HTMLCanvasElement} */ (document.getElementById('canvas'));
