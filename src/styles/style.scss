@@ -10,12 +10,13 @@ $minTablet: 501px;
 }
 
 input, label, span, span::after {
-    outline-color: transparent;
-    border-color: transparent;
+    outline: none;
+    border: none;
 }
 
-span:focus {
+*:focus {
   outline: none;
+  border: none;
 }
 
 html {
