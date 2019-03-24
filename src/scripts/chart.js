@@ -14,13 +14,15 @@ class Chart {
 
         this.detailedInfoOptions = _initChartData.detailedInfo;
 
-        this.mode = 0;
+        this.mode = this._mode;
+
+        console.log(this.mode);
     }
 
     get _initHTMLMarkup() {
         return `
             <div class="my-chart-wrapper">
-            <button class="switch-mode-btn" data-mode="0">Switch to Night Mode</button>
+            <button class="switch-mode-btn" data-mode="${this.mode}">Switch to Night Mode</button>
             <div class="charts-container">
                 <div class="detailed-chart-container"> 
                     <canvas class="detailed-chart" width="${this.chartDrawingOptions.chartWidth}" height="${this.chartDrawingOptions.chartHeight}"></canvas>
@@ -49,6 +51,24 @@ class Chart {
             </div>
             </div>
             `;
+    }
+
+    get _mode() {
+        let mode = +localStorage.getItem(`${this.entryPoint}-mode`);
+
+        if (mode === null) {
+            mode = 0;
+        }
+
+        console.log(mode);
+
+        return mode;
+    }
+
+    set _mode(mode) {
+        localStorage.setItem(`${this.entryPoint}-mode`, mode);
+
+        this.mode = mode;
     }
 
     startUp() {
@@ -268,8 +288,10 @@ class Chart {
 
         let fontColor = options.dayMode.fontColor;
 
+        console.log('mode draw', this.mode);
+
         if (this.mode) {
-            fontColor = options.nightMode.fontColor
+            fontColor = options.nightMode.fontColor;
         }
 
         ctx.fillStyle = fontColor || this.colors.black;
@@ -571,7 +593,7 @@ class Chart {
     _setSwitchModeListener() {
         const switchModebtn = document.querySelector(`${this.entryPoint} .switch-mode-btn`);
 
-        switchModebtn.addEventListener('click', (e) => {
+        const switchMode = (e, switchMode) => {
             const target = e.target;
 
             const categoryNames = Array.from(document.querySelectorAll(`${this.entryPoint} .category-name`));
@@ -579,32 +601,39 @@ class Chart {
             const categoryLabels = Array.from(document.querySelectorAll(`${this.entryPoint} .category-checkbox`));
 
             const chartWrapper = document.querySelector(`${this.entryPoint} .my-chart-wrapper`);
-            
+
             const modes = ['Day Mode', 'Night Mode'];
 
             const idx = +target.dataset.mode;
 
-            const newIdx = idx === 0 ? 1 : 0;
+            let newIdx = idx;
 
-            target.setAttribute('data-mode', newIdx);
+            if (!switchMode) {
+                newIdx = idx === 0 ? 1 : 0;
+    
+                target.setAttribute('data-mode', newIdx);
+    
+                target.innerText = `Switch to ${modes[idx]}`;
+            }
 
-            target.innerText = `Switch to ${modes[idx]}`;
-
-            
-            if (idx) {    
-                this.mode = 0;
-                chartWrapper.classList.remove('night');              
-                categoryNames.forEach((c) => c.classList.remove('night'));
-                categoryLabels.forEach((c) => c.classList.remove('night'));
-            } else {     
-                this.mode = 1;
+            if (newIdx) {
+                this._mode = 1;
                 chartWrapper.classList.add('night');
                 categoryNames.forEach((c) => c.classList.add('night'));
                 categoryLabels.forEach((c) => c.classList.add('night'));
+            } else {
+                this._mode = 0;
+                chartWrapper.classList.remove('night');
+                categoryNames.forEach((c) => c.classList.remove('night'));
+                categoryLabels.forEach((c) => c.classList.remove('night'));
             }
 
             this._redrawDetailedChart();
-        });
+        }
+
+        switchMode({target: switchModebtn}, true);
+
+        switchModebtn.addEventListener('click', switchMode);
     }
 
     _windowToCanvas(canvas, x, y) {
