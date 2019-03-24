@@ -15,8 +15,6 @@ class Chart {
         this.detailedInfoOptions = _initChartData.detailedInfo;
 
         this.mode = this._mode;
-
-        console.log(this.mode);
     }
 
     get _initHTMLMarkup() {
@@ -59,8 +57,6 @@ class Chart {
         if (mode === null) {
             mode = 0;
         }
-
-        console.log(mode);
 
         return mode;
     }
@@ -287,8 +283,6 @@ class Chart {
         ctx.font = options.font || '20px sans-serif';
 
         let fontColor = options.dayMode.fontColor;
-
-        console.log('mode draw', this.mode);
 
         if (this.mode) {
             fontColor = options.nightMode.fontColor;
@@ -659,36 +653,61 @@ class Chart {
 
         const activeLines = this._getActiveLinesFromCheckBoxes();
 
-        if (this.coordsValuesAccordance[`${coords.x}-0`]) {
-            for (const [idx, line] of activeLines.entries()) {
-                drawData[line] = this.coordsValuesAccordance[`${coords.x}-${idx}`];
-            }
+        // console.log(this.coordsValuesAccordance);
+        // console.log(coords.x);
 
-            this._redrawDetailedChart(false, drawData);
-            this.lastDetailedInfoData = drawData;
-        } else {
-            if (this.lastDetailedInfoData) {
-                for (let [idx, line] of activeLines.entries()) {
-                    drawData[line] = this.coordsValuesAccordance[`${this.lastDetailedInfoData.x}-${idx}`];
+        let nearestX = coords.x;
+        let foundXAccordance = this.coordsValuesAccordance[`${nearestX}-0`];
+        
+        if (!foundXAccordance) {
+            while (!foundXAccordance) {
+                nearestX +=1 ;
+                foundXAccordance = this.coordsValuesAccordance[`${nearestX}-0`];
+                console.log('nearestX', nearestX);
+                console.log('running');
+                if(foundXAccordance) {
+                    break;
                 }
-
-                this._redrawDetailedChart(false, drawData);
             }
+        } 
+
+        for (const [idx, line] of activeLines.entries()) {
+            drawData[line] = this.coordsValuesAccordance[`${nearestX}-${idx}`];
         }
+
+        this._redrawDetailedChart(false, drawData);
+        this.lastDetailedInfoData = drawData;
+
+        // if (this.coordsValuesAccordance[`${coords.x}-0`]) {
+        //     for (const [idx, line] of activeLines.entries()) {
+        //         drawData[line] = this.coordsValuesAccordance[`${coords.x}-${idx}`];
+        //     }
+
+        //     this._redrawDetailedChart(false, drawData);
+        //     this.lastDetailedInfoData = drawData;
+        // } else {
+        //     if (this.lastDetailedInfoData) {
+        //         for (let [idx, line] of activeLines.entries()) {
+        //             drawData[line] = this.coordsValuesAccordance[`${this.lastDetailedInfoData.x}-${idx}`];
+        //         }
+
+        //         this._redrawDetailedChart(false, drawData);
+        //     }
+        // }
     }
 
     _setDetailedInfoListener(canvas, options) {
         canvas.addEventListener('mousemove', this._detailedInfoHandler.bind(this, canvas, options));
 
-        canvas.addEventListener('touchmove', this._detailedInfoHandler.bind(this, canvas, options));
+        // canvas.addEventListener('touchmove', this._detailedInfoHandler.bind(this, canvas, options));
 
-        canvas.addEventListener('touchstart', this._detailedInfoHandler.bind(this, canvas, options));
+        canvas.addEventListener('click', this._detailedInfoHandler.bind(this, canvas, options));
 
-        canvas.addEventListener('touchend', (e) => {
-            canvas.ontouchend = null;
-            this.lastDetailedInfoData = null;
-            this._redrawDetailedChart();
-        });
+        // canvas.addEventListener('touchend', (e) => {
+        //     canvas.ontouchend = null;
+        //     this.lastDetailedInfoData = null;
+        //     this._redrawDetailedChart();
+        // });
 
         canvas.addEventListener('mouseout', () => {
             canvas.onmouseout = null;
@@ -702,8 +721,6 @@ class Chart {
         const xLeftEdge = drawData.x - options.offsetX;
 
         if (xRightEdge >= 0 && xLeftEdge >= 0) {
-
-            let circleFillColor = options.circleFillColor || this.colors.white;
 
             this._drawValuesLine(ctx, drawData, options);
 
