@@ -646,7 +646,7 @@ class Chart {
         const clientY = !isNaN(event.clientY) ? event.clientY : Math.round(event.touches[0].clientY);
         const coords = this._windowToCanvas(canvas, clientX, clientY);
 
-        if ((touch && (coords.y >= options.offsetY)) || !touch) {
+        if ((touch && (coords.y >= options.offsetY)) || (!touch && document.body.offsetWidth > 500)) {
             const yStart = (options.offsetY || 10) + canvas.clientHeight * 0.2;
             const yEnd = canvas.clientHeight;
 
