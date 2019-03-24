@@ -2,6 +2,7 @@
 
 $maxCellPhone: 500px;
 $minTablet: 501px;
+$minPC: 769px;
 
 *{
   margin: 0;
@@ -79,7 +80,7 @@ html {
           height: inherit;
           background-color: rgba(var(--lightblue-rgb), 0.7);
           
-          @media (max-width: $minTablet) {
+          @media (max-width: $minPC) {
             width: 10px;
           }
 
