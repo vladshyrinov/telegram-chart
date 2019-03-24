@@ -16,17 +16,15 @@ html {
   font-family: Verdana, sans-serif;
 }
 
-body {
+.my-chart-wrapper {
+  position: relative;
+  padding-bottom: 20px;
   transition: background-color 0.5s;
-  
+
   &.night {
     background-color: var(--nightblue);
     transition: background-color 0.5s;
   }
-}
-
-#my-chart-wrapper {
-  position: relative;
 
   .switch-mode-btn {
     position: absolute;
@@ -54,19 +52,19 @@ body {
 
     }
   
-    #chart {
+    .chart {
       position: absolute;
       height: inherit;
       width: inherit;
     }
   
-    #window-sizer-wrapper {
+    .window-sizer-wrapper {
       position: absolute;
       left: 0;
       height: inherit;
       width: inherit;
   
-      #window-sizer {
+      .window-sizer {
         cursor: pointer;
         position: relative;
         width: 100px;
@@ -123,7 +121,7 @@ body {
         width: 20px;
         height: 20px;
         border-radius: 50%;
-        border: 1px solid var(--checkbox1Color);
+        border: 1px solid;
         transition: background-color 0.5s;
 
         &::after {
@@ -153,8 +151,11 @@ body {
         height: 0;
         width: 0;
         &:checked + .checkmark {
-          background-color: var(--checkbox1Color);
-          transition: background-color 0.5s;
+        transition: background-color 0.5s;
+
+          &.off {
+            background-color: var(--white) !important; 
+          }
 
           &::after {
             width: 5px;
@@ -166,18 +167,6 @@ body {
             transform: rotate(45deg);
             transition: transform 0.5s;
           }
-        }
-      }
-    }
-  
-    .category-checkbox:nth-child(2) {
-      .checkmark {
-        border-color: var(--checkbox2Color);
-      }
-  
-      input[type="checkbox"] {
-        &:checked + .checkmark {
-          background-color: var(--checkbox2Color);
         }
       }
     }
