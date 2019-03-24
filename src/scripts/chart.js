@@ -20,10 +20,10 @@ class Chart {
     get _initHTMLMarkup() {
         return `
             <div class="my-chart-wrapper">
-            <button class="switch-mode-btn" data-mode="${this.mode}">Switch to Night Mode</button>
+            <button class="switch-mode-btn" data-mode="${this.mode}">${this.mode ? 'Switch to Day Mode' : 'Switch to Night Mode'}</button>
             <div class="charts-container">
                 <div class="detailed-chart-container"> 
-                    <canvas class="detailed-chart" width="${this.chartDrawingOptions.chartWidth}" height="${this.chartDrawingOptions.chartHeight}"></canvas>
+                    <canvas class="detailed-chart" width="${this.chartDrawingOptions.chartWidth}" height="${this.chartDrawingOptions.chartHeight + 15}"></canvas>
                 </div>
                 <div class="ruler-container">
                     <canvas class="chart" width="${this.generalChartDrawingOptions.chartWidth}" height="${this.generalChartDrawingOptions.chartHeight}"></canvas>
@@ -174,10 +174,11 @@ class Chart {
 
         const startPosX = offsetX - 1;
         const endPosX = chartWidth - 1;
+        const endPosXNames = chartWidth - 1 - 35;
         const startPosY = chartHeight - 1;
         const endPosY = offsetY - 1;
 
-        const stepXAxis = (endPosX - startPosX) / stepsX;
+        const stepXAxis = (endPosXNames - startPosX) / stepsX;
         const stepYAxis = (startPosY - endPosY) / stepsY;
 
         ctx.save();
@@ -192,13 +193,13 @@ class Chart {
 
         // X axis values
 
-        for (let curPosX = startPosX, curXValue = xMin; curPosX <= endPosX;
+        for (let curPosX = startPosX, curXValue = xMin; curPosX <= endPosXNames;
             curPosX += stepXAxis, curXValue += stepXValue) {
 
             const date = new Date(curXValue);
             const representativeDate = this._getRepresentationDate(date);
 
-            ctx.fillText(representativeDate, curPosX + 5, startPosY - 5);
+            ctx.fillText(representativeDate, curPosX, startPosY + 15);
         }
 
         // Y axis values
@@ -234,7 +235,7 @@ class Chart {
         const yMax = !isNaN(options.yMax) ? options.yMax : 10;
         const yMin = !isNaN(options.yMin) ? options.yMin : 10;
 
-        const idx = options.idx;
+        const lineSymbol = options.lineSymbol;
 
         const stepY = (chartHeight - offsetY - 1) / (yMax - yMin);
         const stepX = (chartWidth - offsetX - 1) / (xMax - xMin);
@@ -258,7 +259,7 @@ class Chart {
             const xValue = xValues[i];
             
             if(ctx === this.detailedCtx) {
-                this.coordsValuesAccordance[`${x}-${idx}`] = { x, y, yValue, xValue }; 
+                this.coordsValuesAccordance[`${x}-${lineSymbol}`] = { x, y, yValue, xValue }; 
             }
 
             if (i === 0) {
@@ -376,6 +377,11 @@ class Chart {
             this.coordsValuesAccordance = {};
         }
 
+        if (detailedChart) {
+            this._drawCoordinateAxis({ ...options, ...xyMaxMins, ...this.axisOptions }, ctx);
+            this._drawChartName({ ...options, ...this.chartNameOptions }, ctx);
+        }
+
         for (const [idx, c] of yColumns.entries()) {
             const lineSymbol = c[0];
 
@@ -393,19 +399,15 @@ class Chart {
                     name: linesNames[lineSymbol],
                     xValues,
                     yValues,
-                    idx
+                    lineSymbol
                 }
 
                 this._drawLine({ ...options, ...xyMaxMins, ...lineOptions }, ctx);
             }
         }
 
-        if (detailedChart) {
-            this._drawCoordinateAxis({ ...options, ...xyMaxMins, ...this.axisOptions }, ctx);
-            this._drawChartName({ ...options, ...this.chartNameOptions }, ctx);
-            if (detInfoData) {
-                this._drawDetailedInfo(ctx, detInfoData, { ...options, ...this.detailedInfoOptions });
-            }
+        if (detInfoData) {
+            this._drawDetailedInfo(ctx, detInfoData, { ...options, ...this.detailedInfoOptions });
         }
     }
 
@@ -639,7 +641,7 @@ class Chart {
         };
     }
 
-    _detailedInfoHandler(canvas, options, event) {
+    _detailedInfoHandler(canvas, options, click, event) {
         const clientX = !isNaN(event.clientX) ? event.clientX : event.touches[0].clientX;;
         const clientY = !isNaN(event.clientY) ? event.clientY : event.touches[0].clientY;
         const coords = this._windowToCanvas(canvas, clientX, clientY);
@@ -653,55 +655,60 @@ class Chart {
 
         const activeLines = this._getActiveLinesFromCheckBoxes();
 
-        // console.log(this.coordsValuesAccordance);
-        // console.log(coords.x);
-
-        let nearestX = coords.x;
-        let foundXAccordance = this.coordsValuesAccordance[`${nearestX}-0`];
-        
-        if (!foundXAccordance) {
-            while (!foundXAccordance) {
-                nearestX +=1 ;
-                foundXAccordance = this.coordsValuesAccordance[`${nearestX}-0`];
-                console.log('nearestX', nearestX);
-                console.log('running');
-                if(foundXAccordance) {
-                    break;
+        if (activeLines.length) {
+            let nearestX = coords.x;
+            let foundXAccordance = this.coordsValuesAccordance[`${nearestX}-${activeLines[0]}`];
+            
+            if (click) {
+                if (!foundXAccordance) {
+                    while (!foundXAccordance) {
+                        if(nearestX < canvas.clientWidth - 1) {
+                            nearestX += 1;
+                            foundXAccordance = this.coordsValuesAccordance[`${nearestX}-${activeLines[0]}`];
+                        } else {
+                            break;
+                        }
+                    }
                 }
-            }
-        } 
-
-        for (const [idx, line] of activeLines.entries()) {
-            drawData[line] = this.coordsValuesAccordance[`${nearestX}-${idx}`];
+    
+                for (const line of activeLines) {
+                    drawData[line] = this.coordsValuesAccordance[`${nearestX}-${line}`];
+                    drawData.x = nearestX;
+                }
+    
+                this._redrawDetailedChart(false, drawData);
+                // this.lastDetailedInfoData = drawData;
+            } 
+            
+            // else {
+            //     if (foundXAccordance) {
+            //         for (const line of activeLines) {
+            //             drawData[line] = this.coordsValuesAccordance[`${nearestX}-${line}`];
+            //         }
+    
+            //         this._redrawDetailedChart(false, drawData);
+            //         this.lastDetailedInfoData = drawData;
+            //     } else {
+            //         if (this.lastDetailedInfoData) {
+            //             for (let line of activeLines) {
+            //                 drawData[line] = this.coordsValuesAccordance[`${this.lastDetailedInfoData.x}-${line}`];
+            //                 drawData.x = nearestX;
+            //             }
+    
+            //             this._redrawDetailedChart(false, drawData);
+            //         }
+            //     }
+            // }
         }
 
-        this._redrawDetailedChart(false, drawData);
-        this.lastDetailedInfoData = drawData;
-
-        // if (this.coordsValuesAccordance[`${coords.x}-0`]) {
-        //     for (const [idx, line] of activeLines.entries()) {
-        //         drawData[line] = this.coordsValuesAccordance[`${coords.x}-${idx}`];
-        //     }
-
-        //     this._redrawDetailedChart(false, drawData);
-        //     this.lastDetailedInfoData = drawData;
-        // } else {
-        //     if (this.lastDetailedInfoData) {
-        //         for (let [idx, line] of activeLines.entries()) {
-        //             drawData[line] = this.coordsValuesAccordance[`${this.lastDetailedInfoData.x}-${idx}`];
-        //         }
-
-        //         this._redrawDetailedChart(false, drawData);
-        //     }
-        // }
     }
 
     _setDetailedInfoListener(canvas, options) {
-        canvas.addEventListener('mousemove', this._detailedInfoHandler.bind(this, canvas, options));
+        canvas.addEventListener('mousemove', this._detailedInfoHandler.bind(this, canvas, options, true));
 
         // canvas.addEventListener('touchmove', this._detailedInfoHandler.bind(this, canvas, options));
 
-        canvas.addEventListener('click', this._detailedInfoHandler.bind(this, canvas, options));
+        canvas.addEventListener('click', this._detailedInfoHandler.bind(this, canvas, options, true));
 
         // canvas.addEventListener('touchend', (e) => {
         //     canvas.ontouchend = null;
@@ -711,7 +718,7 @@ class Chart {
 
         canvas.addEventListener('mouseout', () => {
             canvas.onmouseout = null;
-            this.lastDetailedInfoData = null;
+            // this.lastDetailedInfoData = null;
             this._redrawDetailedChart();
         });
     }
@@ -888,7 +895,7 @@ class Chart {
         ctx.save();       
         ctx.beginPath();
         ctx.moveTo(drawData.x, drawData.yStart);
-        ctx.lineTo(drawData.x, drawData.yEnd);
+        ctx.lineTo(drawData.x, drawData.yEnd - 15);
         ctx.lineWidth = 2;
         let strokeStyle = options.dayMode.lineValuesColor;
         if(this.mode) {
