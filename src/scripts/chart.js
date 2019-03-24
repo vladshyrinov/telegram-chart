@@ -678,6 +678,8 @@ class Chart {
 
                 this._redrawDetailedChart(false, drawData);
             }
+        } else {
+            this._redrawDetailedChart();
         }
     }
 
