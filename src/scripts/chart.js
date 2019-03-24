@@ -642,8 +642,8 @@ class Chart {
     }
 
     _detailedInfoHandler(canvas, options, touch, event) {
-        const clientX = !isNaN(event.clientX) ? event.clientX : event.touches[0].clientX;;
-        const clientY = !isNaN(event.clientY) ? event.clientY : event.touches[0].clientY;
+        const clientX = !isNaN(event.clientX) ? event.clientX : Math.round(event.touches[0].clientX);
+        const clientY = !isNaN(event.clientY) ? event.clientY : Math.round(event.touches[0].clientY);
         const coords = this._windowToCanvas(canvas, clientX, clientY);
 
         if ((touch && (coords.y >= options.offsetY)) || !touch) {
@@ -684,7 +684,7 @@ class Chart {
     _setDetailedInfoListener(canvas, options) {
         canvas.addEventListener('mousemove', this._detailedInfoHandler.bind(this, canvas, options, false));
 
-        canvas.addEventListener('touchup', this._detailedInfoHandler.bind(this, canvas, options, true));
+        canvas.addEventListener('touchstart', this._detailedInfoHandler.bind(this, canvas, options, true));
 
         canvas.addEventListener('mouseout', () => {
             canvas.onmouseout = null;
