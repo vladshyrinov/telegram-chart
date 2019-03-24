@@ -641,28 +641,28 @@ class Chart {
         };
     }
 
-    _detailedInfoHandler(canvas, options, click, event) {
+    _detailedInfoHandler(canvas, options, touch, event) {
         const clientX = !isNaN(event.clientX) ? event.clientX : event.touches[0].clientX;;
         const clientY = !isNaN(event.clientY) ? event.clientY : event.touches[0].clientY;
         const coords = this._windowToCanvas(canvas, clientX, clientY);
 
-        const yStart = (options.offsetY || 10) + canvas.clientHeight * 0.2;
-        const yEnd = canvas.clientHeight;
+        if ((touch && (coords.y >= options.offsetY)) || !touch) {
+            const yStart = (options.offsetY || 10) + canvas.clientHeight * 0.2;
+            const yEnd = canvas.clientHeight;
 
-        const drawData = { yStart, yEnd };
+            const drawData = { yStart, yEnd };
 
-        drawData.x = coords.x;
+            drawData.x = coords.x;
 
-        const activeLines = this._getActiveLinesFromCheckBoxes();
+            const activeLines = this._getActiveLinesFromCheckBoxes();
 
-        if (activeLines.length) {
-            let nearestX = coords.x;
-            let foundXAccordance = this.coordsValuesAccordance[`${nearestX}-${activeLines[0]}`];
-            
-            if (click) {
+            if (activeLines.length) {
+                let nearestX = coords.x;
+                let foundXAccordance = this.coordsValuesAccordance[`${nearestX}-${activeLines[0]}`];
+
                 if (!foundXAccordance) {
                     while (!foundXAccordance) {
-                        if(nearestX < canvas.clientWidth - 1) {
+                        if (nearestX < canvas.clientWidth - 1) {
                             nearestX += 1;
                             foundXAccordance = this.coordsValuesAccordance[`${nearestX}-${activeLines[0]}`];
                         } else {
@@ -670,55 +670,24 @@ class Chart {
                         }
                     }
                 }
-    
+
                 for (const line of activeLines) {
                     drawData[line] = this.coordsValuesAccordance[`${nearestX}-${line}`];
                     drawData.x = nearestX;
                 }
-    
-                this._redrawDetailedChart(false, drawData);
-                // this.lastDetailedInfoData = drawData;
-            } 
-            
-            // else {
-            //     if (foundXAccordance) {
-            //         for (const line of activeLines) {
-            //             drawData[line] = this.coordsValuesAccordance[`${nearestX}-${line}`];
-            //         }
-    
-            //         this._redrawDetailedChart(false, drawData);
-            //         this.lastDetailedInfoData = drawData;
-            //     } else {
-            //         if (this.lastDetailedInfoData) {
-            //             for (let line of activeLines) {
-            //                 drawData[line] = this.coordsValuesAccordance[`${this.lastDetailedInfoData.x}-${line}`];
-            //                 drawData.x = nearestX;
-            //             }
-    
-            //             this._redrawDetailedChart(false, drawData);
-            //         }
-            //     }
-            // }
-        }
 
+                this._redrawDetailedChart(false, drawData);
+            }
+        }
     }
 
     _setDetailedInfoListener(canvas, options) {
-        canvas.addEventListener('mousemove', this._detailedInfoHandler.bind(this, canvas, options, true));
+        canvas.addEventListener('mousemove', this._detailedInfoHandler.bind(this, canvas, options, false));
 
-        // canvas.addEventListener('touchmove', this._detailedInfoHandler.bind(this, canvas, options));
-
-        canvas.addEventListener('click', this._detailedInfoHandler.bind(this, canvas, options, true));
-
-        // canvas.addEventListener('touchend', (e) => {
-        //     canvas.ontouchend = null;
-        //     this.lastDetailedInfoData = null;
-        //     this._redrawDetailedChart();
-        // });
+        canvas.addEventListener('touchup', this._detailedInfoHandler.bind(this, canvas, options, true));
 
         canvas.addEventListener('mouseout', () => {
             canvas.onmouseout = null;
-            // this.lastDetailedInfoData = null;
             this._redrawDetailedChart();
         });
     }
