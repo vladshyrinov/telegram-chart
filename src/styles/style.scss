@@ -70,9 +70,9 @@ html {
         position: relative;
         width: 100px;
         height: inherit;
-        border-top: 1px solid rgba(var(--lightblue-rgb), 0.7);; 
-        border-bottom: 1px solid rgba(var(--lightblue-rgb), 0.7);; 
-  
+        border-top: 1px solid rgba(var(--lightblue-rgb), 0.7);
+        border-bottom: 1px solid rgba(var(--lightblue-rgb), 0.7);  
+
         .sizer {
           position: absolute;
           width: 6px;
@@ -105,14 +105,11 @@ html {
       border: 1.5px solid var(--lightgray);
       border-radius: 15px;
       transition: border 0.5s;
+      margin-right: 10px;
 
       &.night {
         border-color: var(--bluishgray);
         transition: border 0.5s;
-      }
-
-      &:nth-child(2) {
-        margin-left: 10px;
       }
   
       .checkmark {

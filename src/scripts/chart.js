@@ -35,17 +35,7 @@ class Chart {
                     </div>
                 </div>
             </div>
-            <div class="checkboxes-container">
-                <label class="category-checkbox">
-                    <span class="category-name"></span>
-                    <input type="checkbox" name="checkbox1" checked>
-                    <span class="checkmark"></span>
-                </label>
-                <label class="category-checkbox">
-                    <span class="category-name"></span>
-                    <input type="checkbox" name="checkbox2" checked>
-                    <span class="checkmark"></span>
-                </label>
+            <div class="checkboxes-container">        
             </div>
             </div>
             `;
@@ -73,6 +63,8 @@ class Chart {
         this._initSharedCtx(this.entryPoint);
 
         this._getColors();
+
+        this._intializeCheckboxes();
 
         this._initializeChartDrawing(this.chartDrawingOptions, this.detailedCtx, this._getRange());
 
@@ -150,6 +142,25 @@ class Chart {
         this.windowSizer = document.querySelector(`${entryPoint} .window-sizer`);
 
         this.sizerRight = document.querySelector(`${entryPoint} .sizer-right`);
+    }
+
+    _intializeCheckboxes() {
+        const checkboxesContainer = document.querySelector(`${this.entryPoint} .checkboxes-container`);
+        
+        for(const [idx, c] of this.chartData.columns.entries()) {
+            if(c[0] !== 'x') {
+                const label = document.createElement('label');
+                label.className = 'category-checkbox';
+
+                const labelInnerHtml = `<span class="category-name"></span>
+                            <input type="checkbox" name="checkbox${idx}" checked>
+                            <span class="checkmark"></span>`;
+
+                label.innerHTML = labelInnerHtml;
+
+                checkboxesContainer.appendChild(label);
+            }
+        }
     }
 
     _drawCoordinateAxis(options, ctx) {
@@ -244,7 +255,7 @@ class Chart {
         ctx.beginPath();
 
         // Chart parameters
-
+        
         ctx.strokeStyle = options.lineColor || this.colors.black;
         ctx.lineWidth = options.lineWidth || 2;
 
@@ -257,9 +268,9 @@ class Chart {
 
             const yValue = yValues[i];
             const xValue = xValues[i];
-            
-            if(ctx === this.detailedCtx) {
-                this.coordsValuesAccordance[`${x}-${lineSymbol}`] = { x, y, yValue, xValue }; 
+
+            if (ctx === this.detailedCtx) {
+                this.coordsValuesAccordance[`${x}-${lineSymbol}`] = { x, y, yValue, xValue };
             }
 
             if (i === 0) {
@@ -382,7 +393,7 @@ class Chart {
             this._drawChartName({ ...options, ...this.chartNameOptions }, ctx);
         }
 
-        for (const [idx, c] of yColumns.entries()) {
+        for (const c of yColumns) {
             const lineSymbol = c[0];
 
             if (activeLines.includes(lineSymbol)) {
@@ -409,6 +420,12 @@ class Chart {
         if (detInfoData) {
             this._drawDetailedInfo(ctx, detInfoData, { ...options, ...this.detailedInfoOptions });
         }
+    }
+
+    _opacityToHex(opacity) {
+        const alpha = Math.round(alpha * 255);
+        const hex = (alpha + 0x10000).toString(16).substr(-2).toUpperCase();
+        return hex;
     }
 
     _redrawDetailedChart(reverse, detInfoData) {
@@ -589,7 +606,7 @@ class Chart {
     _setSwitchModeListener() {
         const switchModebtn = document.querySelector(`${this.entryPoint} .switch-mode-btn`);
 
-        const switchMode = (e, switchMode) => {
+        const switchMode = (e, switchModeForce) => {
             const target = e.target;
 
             const categoryNames = Array.from(document.querySelectorAll(`${this.entryPoint} .category-name`));
@@ -604,7 +621,7 @@ class Chart {
 
             let newIdx = idx;
 
-            if (!switchMode) {
+            if (!switchModeForce) {
                 newIdx = idx === 0 ? 1 : 0;
     
                 target.setAttribute('data-mode', newIdx);
@@ -624,7 +641,9 @@ class Chart {
                 categoryLabels.forEach((c) => c.classList.remove('night'));
             }
 
-            this._redrawDetailedChart();
+            if (!switchModeForce) {
+                this._redrawDetailedChart();
+            }
         }
 
         switchMode({target: switchModebtn}, true);
@@ -678,8 +697,6 @@ class Chart {
 
                 this._redrawDetailedChart(false, drawData);
             }
-        } else {
-            // this._redrawDetailedChart();
         }
     }
 
@@ -720,16 +737,20 @@ class Chart {
     _drawInfoWindow(ctx, drawData, options) {
         const activeLines = this._getActiveLinesFromCheckBoxes();
         let yValuesLength = 0; 
-        let yValuesLengthStandard = 8; 
-        let xWidth = 105;
+        let yValuesLengthStandard = 4; 
+        let xWidth = 115;
         let yHeight = 65;
 
         for(const line of activeLines) {
             yValuesLength += drawData[line].yValue.toString().length;
         }
 
-        if (yValuesLength > yValuesLengthStandard) {
-            xWidth += (yValuesLength - yValuesLengthStandard) * 5;
+        if (yValuesLength / activeLines.length > yValuesLengthStandard) {
+            xWidth += (yValuesLength / activeLines.length) * 5;
+        }
+
+        if ((activeLines.length / 2) > 1) {
+            yHeight += (Math.ceil(activeLines.length / 2) - 1) * 40;
         }
 
         let xStart = drawData.x - 10;
@@ -794,7 +815,7 @@ class Chart {
         
         if (activeLines.length && drawData[activeLines[0]]) {
             const date = this._getRepresentationDate(drawData[activeLines[0]].xValue, true);
-            const shiftY = 20;
+            let shiftY = 20;
             let shiftX = 0;
             const xStart = drawData.xStart;
             const yStart = drawData.yStart;
@@ -813,10 +834,18 @@ class Chart {
             const colors = this.chartData.colors;
             const names = this.chartData.names;
     
-            for (const line of activeLines) {
+            for (const [idx, line] of activeLines.entries()) {
+                if (idx % 2) {
+                    shiftX = 60;
+                } else {
+                    shiftX = 0;
+                }
+
+                shiftY = (Math.ceil((idx + 1) / 2) - 1) * 40 + 20;
+
                 this._drawValueInfo(ctx, xStart, yStart, shiftX, shiftY, colors[line], drawData[line].yValue, names[line]);
                 const yValueLength = drawData[line].yValue.toString().length; 
-                shiftX += 50;
+                
                 if (yValueLength > yValueLengthStandard) {
                     shiftX += (yValueLength - yValueLengthStandard) * 5;
                 }
